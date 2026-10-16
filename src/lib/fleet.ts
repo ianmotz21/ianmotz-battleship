@@ -106,3 +106,10 @@ export function randomPlacements(random: () => number = Math.random): Placements
 export function shipAt(placements: Placements, coord: string): ShipId | undefined {
   return FLEET.find((ship) => placements[ship.id]?.cells.includes(coord))?.id;
 }
+
+/** A ship is sunk once every square it covers has been hit. */
+export function sunkShipIds(placements: Placements, shots: ReadonlyMap<string, string>): ShipId[] {
+  return FLEET.filter((ship) => placements[ship.id]?.cells.every((cell) => shots.get(cell) === "hit")).map(
+    (ship) => ship.id,
+  );
+}

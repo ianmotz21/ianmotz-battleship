@@ -13,6 +13,8 @@ export type Dispatch = {
   id: number;
   text: string;
   outcome: ShotOutcome;
+  /** Bold announcement shown above the text, e.g. when a ship sinks. */
+  headline?: string;
 };
 
 type ShipSegment = {
@@ -36,8 +38,9 @@ type BoardProps = {
   title: string;
   motto: string;
   side: Side;
-  /** Ships drawn on this board (only ever the player's own). */
+  /** Ships drawn on this board: the player's own, or enemy ships once sunk. */
   ships?: Placements;
+  sunk?: ShipId[];
   /** Shots fired at this board, and whether each one hit. */
   shots?: Shots;
   /** Makes every square an attack button that calls this when clicked. */
@@ -85,6 +88,7 @@ export default function Board({
   motto,
   side,
   ships,
+  sunk = [],
   shots,
   onAttack,
   attackDisabled = false,
@@ -101,7 +105,7 @@ export default function Board({
     }
     const axis = segment.orientation === "horizontal" ? "H" : "V";
     const end = segment.position === "middle" ? "" : styles[`${segment.position}${axis}`];
-    return `${styles.ship} ${end}`;
+    return `${styles.ship} ${end} ${sunk.includes(segment.shipId) ? styles.sunk : ""}`;
   }
 
   function shotClasses(outcome: ShotOutcome | undefined): string {
@@ -145,11 +149,13 @@ export default function Board({
         <button
           key={coord}
           type="button"
-          className={`${styles.cell} ${styles.target} ${shotClasses(outcome)}`}
+          className={`${styles.cell} ${styles.target} ${shipClasses(segment)} ${shotClasses(outcome)}`}
           data-coord={coord}
+          data-ship={segment?.shipId}
+          data-sunk={segment ? sunk.includes(segment.shipId) : undefined}
           data-attacked={isAttacked}
           data-outcome={outcome}
-          aria-label={`${cellLabel}${shotLabel}`}
+          aria-label={`${cellLabel}${shipLabel}${shotLabel}`}
           disabled={isAttacked || attackDisabled}
           onClick={() => onAttack(coord)}
         />
@@ -162,6 +168,7 @@ export default function Board({
         className={`${styles.cell} ${shipClasses(segment)} ${shotClasses(outcome)}`}
         data-coord={coord}
         data-ship={segment?.shipId}
+        data-sunk={segment ? sunk.includes(segment.shipId) : undefined}
         data-attacked={isAttacked}
         data-outcome={outcome}
         role="img"
@@ -205,6 +212,11 @@ export default function Board({
               data-testid="battle-dispatch"
               data-outcome={dispatch.outcome}
             >
+              {dispatch.headline && (
+                <strong className={styles.dispatchHeadline} data-testid="sunk-announcement">
+                  {dispatch.headline}
+                </strong>
+              )}
               {dispatch.text}
             </p>
           )}

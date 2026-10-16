@@ -32,6 +32,7 @@ type PlayerFleetProps = {
   /** Once the battle starts, ships can no longer be moved. */
   locked: boolean;
   shots: Shots;
+  sunk: ShipId[];
   dispatch: Dispatch | null;
   status?: ReactNode;
 };
@@ -41,6 +42,7 @@ export default function PlayerFleet({
   onPlacementsChange: setPlacements,
   locked,
   shots,
+  sunk,
   dispatch,
   status: battleStatus,
 }: PlayerFleetProps) {
@@ -122,6 +124,7 @@ export default function PlayerFleet({
         motto="Senatus Populusque Romanus"
         ships={placements}
         shots={shots}
+        sunk={sunk}
         status={battleStatus}
         dispatch={dispatch}
       />

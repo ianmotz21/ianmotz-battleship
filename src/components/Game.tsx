@@ -4,7 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import Board, { type Dispatch, type Shots, type Side } from "@/components/Board";
 import PlayerFleet from "@/components/PlayerFleet";
 import { pickBattleMessage, type ShotOutcome } from "@/lib/battleMessages";
-import { BOARD_SIZE, FLEET, randomPlacements, shipAt, toCoord, type Placements } from "@/lib/fleet";
+import {
+  BOARD_SIZE,
+  FLEET,
+  getShip,
+  randomPlacements,
+  shipAt,
+  sunkShipIds,
+  toCoord,
+  type Placements,
+  type ShipId,
+} from "@/lib/fleet";
 import styles from "./Game.module.css";
 
 /** Pause before Carthage fires back, so each turn is easy to follow. */
@@ -20,12 +30,29 @@ function countHits(shots: Shots): number {
   return [...shots.values()].filter((outcome) => outcome === "hit").length;
 }
 
-function nextDispatch(previous: Dispatch | null, attacker: Side, outcome: ShotOutcome): Dispatch {
+function nextDispatch(
+  previous: Dispatch | null,
+  attacker: Side,
+  outcome: ShotOutcome,
+  headline?: string,
+): Dispatch {
   return {
     id: (previous?.id ?? 0) + 1,
     text: pickBattleMessage(attacker, outcome, previous?.text),
     outcome,
+    headline,
   };
+}
+
+/** Which ship (if any) went down with this shot. */
+function newlySunk(ships: Placements, shots: Shots, coord: string): ShipId | undefined {
+  const shipId = shipAt(ships, coord);
+  return shipId && sunkShipIds(ships, shots).includes(shipId) ? shipId : undefined;
+}
+
+/** Only the ships that have been sunk, so the rest stay hidden. */
+function onlyShips(ships: Placements, ids: ShipId[]): Placements {
+  return Object.fromEntries(ids.map((id) => [id, ships[id]]));
 }
 
 /** Carthage's aim: a random square it hasn't fired at yet. */
@@ -42,57 +69,100 @@ function pickCarthageTarget(shots: Shots): string | null {
   return open.length > 0 ? open[Math.floor(Math.random() * open.length)] : null;
 }
 
+/** Each "Play again" swaps in a brand-new Battle, which starts from scratch. */
 export default function Game() {
+  const [gameNumber, setGameNumber] = useState(1);
+  return <Battle key={gameNumber} onPlayAgain={() => setGameNumber((n) => n + 1)} />;
+}
+
+function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
   const [romanShips, setRomanShips] = useState<Placements>({});
   const [shotsAtCarthage, setShotsAtCarthage] = useState<Shots>(() => new Map());
   const [shotsAtRome, setShotsAtRome] = useState<Shots>(() => new Map());
   const [turn, setTurn] = useState<Side>("rome");
+  const [winner, setWinner] = useState<Side | null>(null);
   const [carthageDispatch, setCarthageDispatch] = useState<Dispatch | null>(null);
   const [romeDispatch, setRomeDispatch] = useState<Dispatch | null>(null);
+  // Carthaginian ships the player is allowed to see: sunk ones, or all once the game ends.
+  const [revealedCarthage, setRevealedCarthage] = useState<Placements>({});
 
   // Carthage's hidden fleet. Kept in a ref because nothing on screen shows it.
   const carthageShipsRef = useRef<Placements>({});
   // Flips instantly on click, so two very fast clicks can't both fire in one turn.
   const romeMayFireRef = useRef(true);
+  const playAgainRef = useRef<HTMLButtonElement>(null);
 
-  // Placed in the browser after the page loads, so each visit gets a new layout.
+  // Placed in the browser after the page loads, so each game gets a new layout.
   useEffect(() => {
     carthageShipsRef.current = randomPlacements();
   }, []);
 
+  useEffect(() => {
+    if (winner) {
+      playAgainRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      playAgainRef.current?.focus({ preventScroll: true });
+    }
+  }, [winner]);
+
   const fleetReady = FLEET.every((ship) => romanShips[ship.id]);
   const battleStarted = shotsAtCarthage.size > 0;
+  const carthageSunk = sunkShipIds(revealedCarthage, shotsAtCarthage);
+  const romeSunk = sunkShipIds(romanShips, shotsAtRome);
 
   function handleRomeAttack(coord: string) {
-    if (!fleetReady || turn !== "rome" || !romeMayFireRef.current || shotsAtCarthage.has(coord)) {
+    if (!fleetReady || winner || turn !== "rome" || !romeMayFireRef.current || shotsAtCarthage.has(coord)) {
       return;
     }
     romeMayFireRef.current = false;
 
-    const outcome: ShotOutcome = shipAt(carthageShipsRef.current, coord) ? "hit" : "miss";
-    setShotsAtCarthage(addShot(shotsAtCarthage, coord, outcome));
-    setCarthageDispatch(nextDispatch(carthageDispatch, "rome", outcome));
-    setTurn("carthage");
+    const carthageShips = carthageShipsRef.current;
+    const outcome: ShotOutcome = shipAt(carthageShips, coord) ? "hit" : "miss";
+    const shots = addShot(shotsAtCarthage, coord, outcome);
+    const sunkId = newlySunk(carthageShips, shots, coord);
+    const allSunk = sunkShipIds(carthageShips, shots).length === FLEET.length;
+
+    setShotsAtCarthage(shots);
+    setCarthageDispatch(
+      nextDispatch(carthageDispatch, "rome", outcome, sunkId && `You sank Carthage's ${getShip(sunkId).name}!`),
+    );
+    if (allSunk) {
+      setRevealedCarthage(carthageShips);
+      setWinner("rome");
+    } else {
+      if (sunkId) {
+        setRevealedCarthage(onlyShips(carthageShips, sunkShipIds(carthageShips, shots)));
+      }
+      setTurn("carthage");
+    }
   }
 
   // Carthage's turn: after a short pause it fires once at the Roman fleet,
   // using the same hit check, then hands the turn back to Rome.
   useEffect(() => {
-    if (turn !== "carthage") {
+    if (turn !== "carthage" || winner) {
       return;
     }
     const timer = setTimeout(() => {
       const target = pickCarthageTarget(shotsAtRome);
       if (target) {
         const outcome: ShotOutcome = shipAt(romanShips, target) ? "hit" : "miss";
-        setShotsAtRome(addShot(shotsAtRome, target, outcome));
-        setRomeDispatch(nextDispatch(romeDispatch, "carthage", outcome));
+        const shots = addShot(shotsAtRome, target, outcome);
+        const sunkId = newlySunk(romanShips, shots, target);
+        setShotsAtRome(shots);
+        setRomeDispatch(
+          nextDispatch(romeDispatch, "carthage", outcome, sunkId && `Carthage sank your ${getShip(sunkId).name}!`),
+        );
+        if (sunkShipIds(romanShips, shots).length === FLEET.length) {
+          setRevealedCarthage(carthageShipsRef.current);
+          setWinner("carthage");
+          return;
+        }
       }
       romeMayFireRef.current = true;
       setTurn("rome");
     }, CARTHAGE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [turn, shotsAtRome, romanShips, romeDispatch]);
+  }, [turn, winner, shotsAtRome, romanShips, romeDispatch]);
 
   let phase: "setup" | Side;
   let turnText: string;
@@ -109,11 +179,38 @@ export default function Game() {
       : "The fleet is ready. Fire on the Carthaginian fleet to begin.";
   }
 
+  const romeHits = countHits(shotsAtCarthage);
+  const accuracy = shotsAtCarthage.size ? Math.round((romeHits / shotsAtCarthage.size) * 100) : 0;
+
   return (
     <div className={styles.game}>
-      <p className={styles.turn} aria-live="polite" data-testid="turn-status" data-turn={phase}>
-        {turnText}
-      </p>
+      {winner ? (
+        <section
+          className={`${styles.result} ${winner === "rome" ? styles.victory : styles.defeat}`}
+          aria-live="assertive"
+          data-testid="game-result"
+          data-result={winner === "rome" ? "victory" : "defeat"}
+        >
+          <p className={styles.resultEyebrow}>{winner === "rome" ? "Roma Victrix" : "Vae Victis"}</p>
+          <h2 className={styles.resultTitle}>{winner === "rome" ? "Victory" : "Defeat"}</h2>
+          <p className={styles.resultText}>
+            {winner === "rome"
+              ? "Carthage's fleet lies at the bottom of the Mediterranean. Scipio salutes you, Admiral."
+              : "Hannibal's ships have sent the Roman fleet to the depths. Carthage rules the sea today."}
+          </p>
+          <p className={styles.resultStats}>
+            {shotsAtCarthage.size} shots · {romeHits} hits · {accuracy}% accuracy · {carthageSunk.length} of{" "}
+            {FLEET.length} Carthaginian ships sunk
+          </p>
+          <button ref={playAgainRef} type="button" className={styles.playAgain} onClick={onPlayAgain}>
+            Play again
+          </button>
+        </section>
+      ) : (
+        <p className={styles.turn} aria-live="polite" data-testid="turn-status" data-turn={phase}>
+          {turnText}
+        </p>
+      )}
 
       <div className={styles.boards}>
         <PlayerFleet
@@ -121,12 +218,15 @@ export default function Game() {
           onPlacementsChange={setRomanShips}
           locked={battleStarted}
           shots={shotsAtRome}
+          sunk={romeSunk}
           dispatch={romeDispatch}
           status={
             <>
               Carthage&apos;s shots: <span data-testid="enemy-shots">{shotsAtRome.size}</span>
               {" · "}
               Hits taken: <span data-testid="hits-taken">{countHits(shotsAtRome)}</span>
+              {" · "}
+              Ships lost: <span data-testid="ships-lost">{romeSunk.length}</span>
             </>
           }
         />
@@ -139,19 +239,25 @@ export default function Game() {
           side="carthage"
           title="Carthaginian Fleet"
           motto="Qart-ḥadašt"
+          ships={revealedCarthage}
+          sunk={carthageSunk}
           shots={shotsAtCarthage}
           onAttack={handleRomeAttack}
-          attackDisabled={!fleetReady || turn !== "rome"}
+          attackDisabled={!fleetReady || winner !== null || turn !== "rome"}
           status={
             <>
               Shots fired: <span data-testid="shots-fired">{shotsAtCarthage.size}</span>
               {" · "}
-              Hits: <span data-testid="hits">{countHits(shotsAtCarthage)}</span>
+              Hits: <span data-testid="hits">{romeHits}</span>
+              {" · "}
+              Sunk: <span data-testid="sunk-count">{carthageSunk.length}</span>
             </>
           }
           dispatch={carthageDispatch}
         >
-          <p className={styles.note}>Five Carthaginian warships lie hidden in these waters.</p>
+          <p className={styles.note}>
+            {winner ? "The Carthaginian fleet, revealed." : "Five Carthaginian warships lie hidden in these waters."}
+          </p>
         </Board>
       </div>
     </div>
