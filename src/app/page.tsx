@@ -22,7 +22,12 @@ export default function Home() {
           <span className={styles.versusText}>contra</span>
           <span className={styles.versusLine} />
         </div>
-        <Board side="carthage" title="Carthaginian Fleet" motto="Qart-ḥadašt" />
+        <Board
+          side="carthage"
+          title="Carthaginian Fleet"
+          motto="Qart-ḥadašt"
+          interactive
+        />
       </div>
 
       <footer className={styles.footer}>
