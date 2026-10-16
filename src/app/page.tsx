@@ -1,4 +1,5 @@
-import Board from "@/components/Board";
+import EnemyFleet from "@/components/EnemyFleet";
+import PlayerFleet from "@/components/PlayerFleet";
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -12,22 +13,13 @@ export default function Home() {
       </header>
 
       <div className={styles.boards}>
-        <Board
-          side="rome"
-          title="Roman Fleet"
-          motto="Senatus Populusque Romanus"
-        />
+        <PlayerFleet />
         <div className={styles.versus} aria-hidden="true">
           <span className={styles.versusLine} />
           <span className={styles.versusText}>contra</span>
           <span className={styles.versusLine} />
         </div>
-        <Board
-          side="carthage"
-          title="Carthaginian Fleet"
-          motto="Qart-ḥadašt"
-          interactive
-        />
+        <EnemyFleet />
       </div>
 
       <footer className={styles.footer}>
