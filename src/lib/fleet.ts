@@ -113,3 +113,34 @@ export function sunkShipIds(placements: Placements, shots: ReadonlyMap<string, s
     (ship) => ship.id,
   );
 }
+
+export type ShotResult = {
+  outcome: "hit" | "miss";
+  /** A new map with this shot added; the original is left unchanged. */
+  shots: Map<string, "hit" | "miss">;
+  /** The ship this shot sank, if any. */
+  sunkShipId?: ShipId;
+  /** True once every ship in the fleet has been sunk. */
+  allSunk: boolean;
+};
+
+/** Resolves one shot at a fleet. Returns null if that square was already fired at. */
+export function fireShot(
+  placements: Placements,
+  shots: ReadonlyMap<string, "hit" | "miss">,
+  coord: string,
+): ShotResult | null {
+  if (shots.has(coord)) {
+    return null;
+  }
+  const shipId = shipAt(placements, coord);
+  const outcome = shipId ? "hit" : "miss";
+  const next = new Map(shots).set(coord, outcome);
+  const sunk = sunkShipIds(placements, next);
+  return {
+    outcome,
+    shots: next,
+    sunkShipId: shipId && sunk.includes(shipId) ? shipId : undefined,
+    allSunk: sunk.length === FLEET.length,
+  };
+}

@@ -9,9 +9,9 @@ import { pickBattleMessage, type ShotOutcome } from "@/lib/battleMessages";
 import { playGameOver, playShipSunk, playShot } from "@/lib/sound";
 import {
   FLEET,
+  fireShot,
   getShip,
   randomPlacements,
-  shipAt,
   sunkShipIds,
   type Placements,
   type ShipId,
@@ -20,12 +20,6 @@ import styles from "./Game.module.css";
 
 /** Pause before Carthage fires back, so each turn is easy to follow. */
 const CARTHAGE_DELAY_MS = 900;
-
-function addShot(shots: Shots, coord: string, outcome: ShotOutcome): Shots {
-  const next = new Map(shots);
-  next.set(coord, outcome);
-  return next;
-}
 
 function countHits(shots: Shots): number {
   return [...shots.values()].filter((outcome) => outcome === "hit").length;
@@ -43,12 +37,6 @@ function nextDispatch(
     outcome,
     headline,
   };
-}
-
-/** Which ship (if any) went down with this shot. */
-function newlySunk(ships: Placements, shots: Shots, coord: string): ShipId | undefined {
-  const shipId = shipAt(ships, coord);
-  return shipId && sunkShipIds(ships, shots).includes(shipId) ? shipId : undefined;
 }
 
 /** Only the ships that have been sunk, so the rest stay hidden. */
@@ -97,17 +85,18 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
   const romeSunk = sunkShipIds(romanShips, shotsAtRome);
 
   function handleRomeAttack(coord: string) {
-    if (!fleetReady || winner || turn !== "rome" || !romeMayFireRef.current || shotsAtCarthage.has(coord)) {
+    if (!fleetReady || winner || turn !== "rome" || !romeMayFireRef.current) {
+      return;
+    }
+    const carthageShips = carthageShipsRef.current;
+    const result = fireShot(carthageShips, shotsAtCarthage, coord);
+    if (!result) {
       return;
     }
     romeMayFireRef.current = false;
 
-    const carthageShips = carthageShipsRef.current;
-    const outcome: ShotOutcome = shipAt(carthageShips, coord) ? "hit" : "miss";
+    const { outcome, shots, sunkShipId: sunkId, allSunk } = result;
     playShot("rome", outcome);
-    const shots = addShot(shotsAtCarthage, coord, outcome);
-    const sunkId = newlySunk(carthageShips, shots, coord);
-    const allSunk = sunkShipIds(carthageShips, shots).length === FLEET.length;
 
     setShotsAtCarthage(shots);
     setCarthageDispatch(
@@ -137,19 +126,18 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
         sunkShipIds(romanShips, shotsAtRome).flatMap((id) => romanShips[id]?.cells ?? []),
       );
       const target = pickCarthageTarget(shotsAtRome, sunkCells);
-      if (target) {
-        const outcome: ShotOutcome = shipAt(romanShips, target) ? "hit" : "miss";
+      const result = target ? fireShot(romanShips, shotsAtRome, target) : null;
+      if (result) {
+        const { outcome, shots, sunkShipId: sunkId, allSunk } = result;
         playShot("carthage", outcome);
-        const shots = addShot(shotsAtRome, target, outcome);
-        const sunkId = newlySunk(romanShips, shots, target);
         setShotsAtRome(shots);
         setRomeDispatch(
           nextDispatch(romeDispatch, "carthage", outcome, sunkId && `Carthage sank your ${getShip(sunkId).name}!`),
         );
-        if (sunkId && sunkShipIds(romanShips, shots).length < FLEET.length) {
+        if (sunkId && !allSunk) {
           playShipSunk("rome");
         }
-        if (sunkShipIds(romanShips, shots).length === FLEET.length) {
+        if (allSunk) {
           playGameOver("defeat");
           setRevealedCarthage(carthageShipsRef.current);
           setWinner("carthage");

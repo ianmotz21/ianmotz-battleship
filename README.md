@@ -28,6 +28,7 @@ Then open [http://localhost:3000](http://localhost:3000).
 | --- | --- |
 | `npm run dev` | Development server with hot reload |
 | `npm run build` then `npm run start` | Production build and server |
+| `npm test` | Core game logic tests |
 | `npm run lint` | ESLint |
 | `npx tsc --noEmit` | Type check |
 
@@ -57,13 +58,14 @@ src/
     ai.ts              Carthage's hunt/target targeting
     sound.ts           Synthesized sound effects
     battleMessages.ts  Themed hit and miss commentary
+    gameLogic.test.ts  Tests for shots, sinking, winning, placement and the AI
 ```
 
 ## Game logic
 
-- **Fleet:** each side has five ships with the standard sizes 5, 4, 3, 3 and 2. `fleet.ts` holds the rules as pure functions that don't touch React: `checkPlacement`, `randomPlacements`, `shipAt` and `sunkShipIds`. Both the player's placement and the AI's placement use the same rules.
+- **Fleet:** each side has five ships with the standard sizes 5, 4, 3, 3 and 2. `fleet.ts` holds the rules as pure functions that don't touch React: `checkPlacement`, `randomPlacements`, `shipAt`, `sunkShipIds`, and `fireShot`, which resolves a single shot. Both the player's placement and the AI's placement use the same rules.
 - **State:** `Game.tsx` owns all game state: both fleets, both sets of shots (`Map<coord, "hit" | "miss">`), whose turn it is, and the winner. The boards only display what they're given.
-- **Turn flow:** firing unlocks once all five Roman ships are placed, and the Roman fleet locks after the first shot. Rome fires, then Carthage replies after a short delay. An already-attacked square can't be fired at again: its button is disabled, and the game's state also rejects a repeat shot.
+- **Turn flow:** firing unlocks once all five Roman ships are placed, and the Roman fleet locks after the first shot. Rome fires, then Carthage replies after a short delay. An already-attacked square can't be fired at again: its button is disabled, and `fireShot` also rejects a repeat shot.
 - **Sinking and winning:** a ship is sunk when every one of its squares has been hit. When all five ships on one side are sunk, the winner is recorded, both boards lock and the full Carthaginian fleet is revealed.
 - **Hidden fleet:** Carthage's layout is generated in the browser after the page loads. This is because Next.js pre-renders the page ahead of time with `cacheComponents`, and doesn't allow random values during that step. The layout is kept in a React ref, so it doesn't appear in the page until a ship is sunk.
 
@@ -77,11 +79,21 @@ src/
 
 Hits on sunk ships no longer count as unresolved, so the AI returns to hunting after each sinking. In 5,000 simulated games, it needed about 59 shots on average to sink a full fleet, compared with about 95 for random firing. That makes it a real challenge, but still beatable.
 
+## Tests
+
+`npm test` runs `src/lib/gameLogic.test.ts` with Node's built-in test runner, using [`tsx`](https://github.com/privatenumber/tsx) to run TypeScript directly. The tests use a fixed fleet, so results are repeatable, and check that:
+
+- shots on ship squares are hits and shots on open water are misses;
+- the same square can't be fired at twice;
+- a ship sinks only when its last square is hit, and the game is won only when all 17 ship squares are hit;
+- placements can't overlap or run off the board, and random fleets are always legal;
+- the AI never repeats a square, and it follows up hits on neighbouring squares and along lines.
+
 ## Built with Devin
 
 This project was built and debugged with [Devin](https://devin.ai), the AI software engineer from Cognition. Features were added one small step at a time, from the starter project through the theme, ship placement, combat, the AI and the cinematic layer.
 
-During development, each step was checked with type checks, linting, production builds and automated Playwright browser tests at desktop and mobile sizes. Those tests aren't included in this repository. Bugs found and fixed this way included:
+During development, each step was checked with type checks, linting, production builds and automated Playwright browser tests at desktop and mobile sizes. The browser tests aren't included in this repository; the core logic tests above are. Bugs found and fixed this way included:
 
 - player shots never being checked against the hidden enemy fleet;
 - boards overflowing the screen on mobile;
