@@ -1,0 +1,34 @@
+.board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(11, 2rem);
+  grid-template-rows: repeat(11, 2rem);
+  gap: 2px;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.cell {
+  background: var(--water);
+  border: 1px solid var(--grid-line);
+  border-radius: 2px;
+}
