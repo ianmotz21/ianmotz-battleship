@@ -2,21 +2,119 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2.5rem;
+  gap: 3rem;
   min-height: 100vh;
-  padding: 3rem 1.5rem;
+  padding: 3.5rem 1.5rem 2.5rem;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.eyebrow {
+  font-family: var(--font-display-stack);
+  font-size: 0.8rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--bronze);
 }
 
 .title {
-  font-size: 3rem;
-  font-weight: 800;
-  letter-spacing: 0.15em;
+  margin-top: 0.75rem;
+  font-family: var(--font-display-stack);
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  background: linear-gradient(180deg, var(--bronze-light) 0%, var(--bronze) 55%, var(--bronze-dark) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 2px 18px rgba(176, 141, 87, 0.18);
+}
+
+.subtitle {
+  margin-top: 0.25rem;
+  font-family: var(--font-serif-stack);
+  font-size: 1.5rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: var(--parchment);
+  opacity: 0.85;
+}
+
+.meander {
+  width: min(420px, 80vw);
+  height: 12px;
+  margin-top: 1.5rem;
+  opacity: 0.7;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M0 19H19V1H5V15H15V5H9V11' fill='none' stroke='%23b08d57' stroke-width='2'/%3E%3C/svg%3E");
+  background-size: 12px 12px;
+  background-repeat: repeat-x;
 }
 
 .boards {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 3rem;
+  align-items: center;
+  gap: 2rem;
+}
+
+.versus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.versusLine {
+  width: 1px;
+  height: 80px;
+  background: linear-gradient(180deg, transparent, var(--bronze), transparent);
+}
+
+.versusText {
+  font-family: var(--font-serif-stack);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--bronze-light);
+}
+
+.footer {
+  margin-top: auto;
+  font-family: var(--font-display-stack);
+  font-size: 0.75rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--bronze-dark);
+}
+
+@media (max-width: 960px) {
+  .versus {
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .versusLine {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--bronze), transparent);
+  }
+}
+
+@media (max-width: 520px) {
+  .main {
+    gap: 2.25rem;
+    padding: 2.5rem 1rem 2rem;
+  }
+
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+  }
 }
