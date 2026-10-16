@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Board from "@/components/Board";
-import { randomPlacements, type Placements } from "@/lib/fleet";
+import { FLEET, randomPlacements, type Placements } from "@/lib/fleet";
 import styles from "./EnemyFleet.module.css";
 
 export default function EnemyFleet() {
@@ -16,8 +16,13 @@ export default function EnemyFleet() {
     shipsRef.current = randomPlacements();
   }, []);
 
+  function findShipAt(coord: string) {
+    const ships = shipsRef.current ?? {};
+    return FLEET.find((ship) => ships[ship.id]?.cells.includes(coord))?.id;
+  }
+
   return (
-    <Board side="carthage" title="Carthaginian Fleet" motto="Qart-ḥadašt" interactive>
+    <Board side="carthage" title="Carthaginian Fleet" motto="Qart-ḥadašt" interactive findShipAt={findShipAt}>
       <p className={styles.note}>Five Carthaginian warships lie hidden in these waters.</p>
     </Board>
   );

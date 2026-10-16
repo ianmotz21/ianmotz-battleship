@@ -211,6 +211,23 @@
   animation: strike 220ms ease-out;
 }
 
+/* A hit: scorched water and a burning red-orange marker */
+.hit {
+  background: linear-gradient(155deg, #4a2a22 0%, #24120f 100%);
+}
+
+.hit::after {
+  inset: 18%;
+  background: radial-gradient(
+    circle,
+    #ffe2a8 0 20%,
+    #f08a3c 24% 46%,
+    #a8261c 50% 66%,
+    transparent 70%
+  );
+  box-shadow: 0 0 8px rgba(240, 138, 60, 0.55);
+}
+
 @keyframes strike {
   from {
     transform: scale(0.3);

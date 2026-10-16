@@ -39,6 +39,7 @@ type BoardProps = {
   interactive?: boolean;
   ships?: Placements;
   placement?: PlacementHandlers;
+  findShipAt?: (coord: string) => ShipId | undefined;
   children?: ReactNode;
 };
 
@@ -79,29 +80,32 @@ export default function Board({
   interactive = false,
   ships,
   placement,
+  findShipAt,
   children,
 }: BoardProps) {
-  const [attacked, setAttacked] = useState<Set<string>>(() => new Set());
+  const [shots, setShots] = useState<Map<string, ShotOutcome>>(() => new Map());
   const [dispatch, setDispatch] = useState<Dispatch | null>(null);
   const attacker: Side = side === "rome" ? "carthage" : "rome";
   const segments = mapShipSegments(ships);
 
+  const hitCount = [...shots.values()].filter((outcome) => outcome === "hit").length;
+
   function handleAttack(coord: string) {
-    if (attacked.has(coord)) {
+    if (shots.has(coord)) {
       return;
     }
 
-    setAttacked((previous) => {
+    const outcome: ShotOutcome = findShipAt?.(coord) ? "hit" : "miss";
+
+    setShots((previous) => {
       if (previous.has(coord)) {
         return previous;
       }
-      const next = new Set(previous);
-      next.add(coord);
+      const next = new Map(previous);
+      next.set(coord, outcome);
       return next;
     });
 
-    // No ships exist yet, so every shot is a miss.
-    const outcome: ShotOutcome = "miss";
     setDispatch({
       id: (dispatch?.id ?? 0) + 1,
       text: pickBattleMessage(attacker, outcome, dispatch?.text),
@@ -154,15 +158,17 @@ export default function Board({
       );
     }
 
-    const isAttacked = attacked.has(coord);
+    const outcome = shots.get(coord);
+    const isAttacked = outcome !== undefined;
     return (
       <button
         key={coord}
         type="button"
-        className={`${styles.cell} ${styles.target} ${isAttacked ? styles.attacked : ""}`}
+        className={`${styles.cell} ${styles.target} ${isAttacked ? styles.attacked : ""} ${outcome === "hit" ? styles.hit : ""}`}
         data-coord={coord}
         data-attacked={isAttacked}
-        aria-label={`${cellLabel}${isAttacked ? ", attacked" : ""}`}
+        data-outcome={outcome}
+        aria-label={`${cellLabel}${isAttacked ? `, attacked, ${outcome}` : ""}`}
         disabled={isAttacked}
         onClick={() => handleAttack(coord)}
       />
@@ -197,7 +203,9 @@ export default function Board({
       {interactive && (
         <>
           <p className={styles.status}>
-            Shots fired: <span data-testid="shots-fired">{attacked.size}</span>
+            Shots fired: <span data-testid="shots-fired">{shots.size}</span>
+            {" · "}
+            Hits: <span data-testid="hits">{hitCount}</span>
           </p>
           <div className={styles.dispatchArea} aria-live="polite">
             {dispatch && (
