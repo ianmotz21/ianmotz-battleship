@@ -65,7 +65,7 @@ src/
 
 - **Fleet:** each side has five ships with the standard sizes 5, 4, 3, 3 and 2. `fleet.ts` holds the rules as pure functions that don't touch React: `checkPlacement`, `randomPlacements`, `shipAt`, `sunkShipIds`, and `fireShot`, which resolves a single shot. Both the player's placement and the AI's placement use the same rules.
 - **State:** `Game.tsx` owns all game state: both fleets, both sets of shots (`Map<coord, "hit" | "miss">`), whose turn it is, and the winner. The boards only display what they're given.
-- **Turn flow:** firing unlocks once all five Roman ships are placed, and the Roman fleet locks after the first shot. Rome fires, then Carthage replies after a short delay. An already-attacked square can't be fired at again: its button is disabled, and `fireShot` also rejects a repeat shot.
+- **Turn flow:** firing unlocks once all five Roman ships are placed, and the Roman fleet locks after the first shot. Rome fires, then Carthage replies after about 1.5 seconds. An already-attacked square can't be fired at again: its button is disabled, and `fireShot` also rejects a repeat shot.
 - **Sinking and winning:** a ship is sunk when every one of its squares has been hit. When all five ships on one side are sunk, the winner is recorded, both boards lock and the full Carthaginian fleet is revealed.
 - **Hidden fleet:** Carthage's layout is generated in the browser after the page loads. This is because Next.js pre-renders the page ahead of time with `cacheComponents`, and doesn't allow random values during that step. The layout is kept in a React ref, so it doesn't appear in the page until a ship is sunk.
 

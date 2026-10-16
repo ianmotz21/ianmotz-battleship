@@ -19,7 +19,7 @@ import {
 import styles from "./Game.module.css";
 
 /** Pause before Carthage fires back, so each turn is easy to follow. */
-const CARTHAGE_DELAY_MS = 900;
+const CARTHAGE_DELAY_MS = 1500;
 
 function countHits(shots: Shots): number {
   return [...shots.values()].filter((outcome) => outcome === "hit").length;
