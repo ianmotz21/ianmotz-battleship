@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { ShotOutcome } from "@/lib/battleMessages";
 import { BOARD_SIZE, COLUMN_LABELS, FLEET, getShip, type Placements, type ShipId } from "@/lib/fleet";
 import styles from "./Board.module.css";
@@ -112,7 +112,7 @@ export default function Board({
     if (!outcome) {
       return "";
     }
-    return `${styles.attacked} ${outcome === "hit" ? styles.hit : ""}`;
+    return `${styles.attacked} ${outcome === "hit" ? styles.hit : styles.miss}`;
   }
 
   function renderCell(col: string, rowIndex: number) {
@@ -123,6 +123,8 @@ export default function Board({
     const cellLabel = `Column ${col}, row ${ROW_LABELS[rowIndex]}`;
     const shipLabel = segment ? `, ${getShip(segment.shipId).name}` : "";
     const shotLabel = isAttacked ? `, attacked, ${outcome}` : "";
+    // Staggers the ocean animation so swells roll diagonally across the board.
+    const waveStyle = { "--wave": COLUMN_LABELS.indexOf(col) + rowIndex } as CSSProperties;
 
     if (placement) {
       const inPreview = placement.preview?.cells.includes(coord) ?? false;
@@ -133,7 +135,8 @@ export default function Board({
           key={coord}
           type="button"
           className={`${styles.cell} ${styles.placeTarget} ${shipClasses(segment)} ${previewClass}`}
-          data-coord={coord}
+          style={waveStyle}
+        data-coord={coord}
           data-ship={segment?.shipId}
           data-preview={previewState}
           aria-label={`${cellLabel}${shipLabel}`}
@@ -150,7 +153,8 @@ export default function Board({
           key={coord}
           type="button"
           className={`${styles.cell} ${styles.target} ${shipClasses(segment)} ${shotClasses(outcome)}`}
-          data-coord={coord}
+          style={waveStyle}
+        data-coord={coord}
           data-ship={segment?.shipId}
           data-sunk={segment ? sunk.includes(segment.shipId) : undefined}
           data-attacked={isAttacked}
@@ -166,6 +170,7 @@ export default function Board({
       <div
         key={coord}
         className={`${styles.cell} ${shipClasses(segment)} ${shotClasses(outcome)}`}
+        style={waveStyle}
         data-coord={coord}
         data-ship={segment?.shipId}
         data-sunk={segment ? sunk.includes(segment.shipId) : undefined}

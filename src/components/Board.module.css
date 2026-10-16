@@ -104,10 +104,23 @@
 }
 
 .cell {
+  --glint: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.13) 48%, transparent 62%) 0 0 / 300% 300%;
   position: relative;
-  background: linear-gradient(155deg, var(--sea-light) 0%, var(--sea) 70%);
+  background: var(--glint), linear-gradient(155deg, var(--sea-light) 0%, var(--sea) 70%);
   border: 1px solid var(--sea-line);
   border-radius: 1px;
+  animation: swell 9s linear infinite;
+  animation-delay: calc(var(--wave, 0) * -0.35s);
+}
+
+/* A band of light drifts across each square; staggered delays make it roll across the board. */
+@keyframes swell {
+  from {
+    background-position: 100% 100%, 0 0;
+  }
+  to {
+    background-position: 0 0, 0 0;
+  }
 }
 
 .status {
@@ -211,7 +224,35 @@
 
 .attacked {
   cursor: default;
-  background: linear-gradient(155deg, var(--sea) 0%, #0d2a33 100%);
+  background: var(--glint), linear-gradient(155deg, var(--sea) 0%, #0d2a33 100%);
+}
+
+/* A miss: a ring of water spreads out where the shot landed */
+.miss::before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  z-index: 2;
+  border: 2px solid rgba(225, 242, 255, 0.85);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(225, 242, 255, 0.3), inset 0 0 6px rgba(225, 242, 255, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  animation: splash 850ms ease-out 160ms;
+}
+
+@keyframes splash {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
 }
 
 .attacked::after {
@@ -244,6 +285,60 @@
     transparent 70%
   );
   box-shadow: 0 0 8px rgba(240, 138, 60, 0.55);
+}
+
+/* A hit: a burst of fire and a jolt of the struck timber */
+.hit::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  z-index: 2;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 226, 168, 0.95) 0 14%,
+    rgba(240, 128, 48, 0.75) 32%,
+    rgba(150, 40, 16, 0.35) 52%,
+    transparent 70%
+  );
+  opacity: 0;
+  pointer-events: none;
+  animation: burst 650ms ease-out 160ms;
+}
+
+@keyframes burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes impact {
+  0%,
+  100% {
+    transform: none;
+    filter: none;
+  }
+  12% {
+    transform: translate(-2px, 1px) rotate(-4deg);
+    filter: brightness(2) saturate(1.4);
+  }
+  30% {
+    transform: translate(2px, -1px) rotate(3deg);
+  }
+  50% {
+    transform: translate(-1px, 1px) rotate(-1.5deg);
+  }
+  70% {
+    transform: translate(1px, 0);
+  }
 }
 
 @keyframes strike {
@@ -285,6 +380,15 @@
 }
 
 /* Sunk ships: charred, waterlogged timber */
+.cell.ship {
+  animation: none;
+}
+
+.cell.hit {
+  z-index: 1;
+  animation: impact 520ms ease-out 160ms;
+}
+
 .sunk {
   background: linear-gradient(155deg, #4a3b2e 0%, #1f1813 100%);
   border-color: #3a2c1e;
@@ -311,7 +415,11 @@
     transition: none;
   }
 
+  .cell,
+  .cell.hit,
   .attacked::after,
+  .miss::before,
+  .hit::before,
   .dispatch {
     animation: none;
   }

@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Celebration from "@/components/Celebration";
 import Board, { type Dispatch, type Shots, type Side } from "@/components/Board";
 import PlayerFleet from "@/components/PlayerFleet";
 import { pickBattleMessage, type ShotOutcome } from "@/lib/battleMessages";
+import { playGameOver, playShipSunk, playShot } from "@/lib/sound";
 import {
   BOARD_SIZE,
   FLEET,
@@ -117,6 +119,7 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
 
     const carthageShips = carthageShipsRef.current;
     const outcome: ShotOutcome = shipAt(carthageShips, coord) ? "hit" : "miss";
+    playShot("rome", outcome);
     const shots = addShot(shotsAtCarthage, coord, outcome);
     const sunkId = newlySunk(carthageShips, shots, coord);
     const allSunk = sunkShipIds(carthageShips, shots).length === FLEET.length;
@@ -126,10 +129,12 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
       nextDispatch(carthageDispatch, "rome", outcome, sunkId && `You sank Carthage's ${getShip(sunkId).name}!`),
     );
     if (allSunk) {
+      playGameOver("victory");
       setRevealedCarthage(carthageShips);
       setWinner("rome");
     } else {
       if (sunkId) {
+        playShipSunk("carthage");
         setRevealedCarthage(onlyShips(carthageShips, sunkShipIds(carthageShips, shots)));
       }
       setTurn("carthage");
@@ -146,13 +151,18 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
       const target = pickCarthageTarget(shotsAtRome);
       if (target) {
         const outcome: ShotOutcome = shipAt(romanShips, target) ? "hit" : "miss";
+        playShot("carthage", outcome);
         const shots = addShot(shotsAtRome, target, outcome);
         const sunkId = newlySunk(romanShips, shots, target);
         setShotsAtRome(shots);
         setRomeDispatch(
           nextDispatch(romeDispatch, "carthage", outcome, sunkId && `Carthage sank your ${getShip(sunkId).name}!`),
         );
+        if (sunkId && sunkShipIds(romanShips, shots).length < FLEET.length) {
+          playShipSunk("rome");
+        }
         if (sunkShipIds(romanShips, shots).length === FLEET.length) {
+          playGameOver("defeat");
           setRevealedCarthage(carthageShipsRef.current);
           setWinner("carthage");
           return;
@@ -184,6 +194,7 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
 
   return (
     <div className={styles.game}>
+      {winner && <Celebration result={winner === "rome" ? "victory" : "defeat"} />}
       {winner ? (
         <section
           className={`${styles.result} ${winner === "rome" ? styles.victory : styles.defeat}`}
