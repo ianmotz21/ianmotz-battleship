@@ -4,16 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import Celebration from "@/components/Celebration";
 import Board, { type Dispatch, type Shots, type Side } from "@/components/Board";
 import PlayerFleet from "@/components/PlayerFleet";
+import { pickCarthageTarget } from "@/lib/ai";
 import { pickBattleMessage, type ShotOutcome } from "@/lib/battleMessages";
 import { playGameOver, playShipSunk, playShot } from "@/lib/sound";
 import {
-  BOARD_SIZE,
   FLEET,
   getShip,
   randomPlacements,
   shipAt,
   sunkShipIds,
-  toCoord,
   type Placements,
   type ShipId,
 } from "@/lib/fleet";
@@ -55,20 +54,6 @@ function newlySunk(ships: Placements, shots: Shots, coord: string): ShipId | und
 /** Only the ships that have been sunk, so the rest stay hidden. */
 function onlyShips(ships: Placements, ids: ShipId[]): Placements {
   return Object.fromEntries(ids.map((id) => [id, ships[id]]));
-}
-
-/** Carthage's aim: a random square it hasn't fired at yet. */
-function pickCarthageTarget(shots: Shots): string | null {
-  const open: string[] = [];
-  for (let row = 0; row < BOARD_SIZE; row++) {
-    for (let col = 0; col < BOARD_SIZE; col++) {
-      const coord = toCoord(col, row);
-      if (!shots.has(coord)) {
-        open.push(coord);
-      }
-    }
-  }
-  return open.length > 0 ? open[Math.floor(Math.random() * open.length)] : null;
 }
 
 /** Each "Play again" swaps in a brand-new Battle, which starts from scratch. */
@@ -148,7 +133,10 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
       return;
     }
     const timer = setTimeout(() => {
-      const target = pickCarthageTarget(shotsAtRome);
+      const sunkCells = new Set(
+        sunkShipIds(romanShips, shotsAtRome).flatMap((id) => romanShips[id]?.cells ?? []),
+      );
+      const target = pickCarthageTarget(shotsAtRome, sunkCells);
       if (target) {
         const outcome: ShotOutcome = shipAt(romanShips, target) ? "hit" : "miss";
         playShot("carthage", outcome);
