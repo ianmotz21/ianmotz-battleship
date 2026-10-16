@@ -1,7 +1,5 @@
-"use client";
-
-import { useState, type ReactNode } from "react";
-import { pickBattleMessage, type ShotOutcome } from "@/lib/battleMessages";
+import type { ReactNode } from "react";
+import type { ShotOutcome } from "@/lib/battleMessages";
 import { BOARD_SIZE, COLUMN_LABELS, FLEET, getShip, type Placements, type ShipId } from "@/lib/fleet";
 import styles from "./Board.module.css";
 
@@ -9,7 +7,9 @@ const ROW_LABELS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
 
 export type Side = "rome" | "carthage";
 
-type Dispatch = {
+export type Shots = Map<string, ShotOutcome>;
+
+export type Dispatch = {
   id: number;
   text: string;
   outcome: ShotOutcome;
@@ -36,10 +36,17 @@ type BoardProps = {
   title: string;
   motto: string;
   side: Side;
-  interactive?: boolean;
+  /** Ships drawn on this board (only ever the player's own). */
   ships?: Placements;
+  /** Shots fired at this board, and whether each one hit. */
+  shots?: Shots;
+  /** Makes every square an attack button that calls this when clicked. */
+  onAttack?: (coord: string) => void;
+  attackDisabled?: boolean;
   placement?: PlacementHandlers;
-  findShipAt?: (coord: string) => ShipId | undefined;
+  status?: ReactNode;
+  /** Pass null to reserve space for battle messages before the first shot. */
+  dispatch?: Dispatch | null;
   children?: ReactNode;
 };
 
@@ -77,41 +84,16 @@ export default function Board({
   title,
   motto,
   side,
-  interactive = false,
   ships,
+  shots,
+  onAttack,
+  attackDisabled = false,
   placement,
-  findShipAt,
+  status,
+  dispatch,
   children,
 }: BoardProps) {
-  const [shots, setShots] = useState<Map<string, ShotOutcome>>(() => new Map());
-  const [dispatch, setDispatch] = useState<Dispatch | null>(null);
-  const attacker: Side = side === "rome" ? "carthage" : "rome";
   const segments = mapShipSegments(ships);
-
-  const hitCount = [...shots.values()].filter((outcome) => outcome === "hit").length;
-
-  function handleAttack(coord: string) {
-    if (shots.has(coord)) {
-      return;
-    }
-
-    const outcome: ShotOutcome = findShipAt?.(coord) ? "hit" : "miss";
-
-    setShots((previous) => {
-      if (previous.has(coord)) {
-        return previous;
-      }
-      const next = new Map(previous);
-      next.set(coord, outcome);
-      return next;
-    });
-
-    setDispatch({
-      id: (dispatch?.id ?? 0) + 1,
-      text: pickBattleMessage(attacker, outcome, dispatch?.text),
-      outcome,
-    });
-  }
 
   function shipClasses(segment: ShipSegment | undefined): string {
     if (!segment) {
@@ -122,10 +104,21 @@ export default function Board({
     return `${styles.ship} ${end}`;
   }
 
+  function shotClasses(outcome: ShotOutcome | undefined): string {
+    if (!outcome) {
+      return "";
+    }
+    return `${styles.attacked} ${outcome === "hit" ? styles.hit : ""}`;
+  }
+
   function renderCell(col: string, rowIndex: number) {
     const coord = `${col}${rowIndex + 1}`;
     const segment = segments.get(coord);
+    const outcome = shots?.get(coord);
+    const isAttacked = outcome !== undefined;
     const cellLabel = `Column ${col}, row ${ROW_LABELS[rowIndex]}`;
+    const shipLabel = segment ? `, ${getShip(segment.shipId).name}` : "";
+    const shotLabel = isAttacked ? `, attacked, ${outcome}` : "";
 
     if (placement) {
       const inPreview = placement.preview?.cells.includes(coord) ?? false;
@@ -139,7 +132,7 @@ export default function Board({
           data-coord={coord}
           data-ship={segment?.shipId}
           data-preview={previewState}
-          aria-label={`${cellLabel}${segment ? `, ${getShip(segment.shipId).name}` : ""}`}
+          aria-label={`${cellLabel}${shipLabel}`}
           onClick={() => placement.onSelectCell(coord)}
           onMouseEnter={() => placement.onHoverCell(coord)}
           onFocus={() => placement.onHoverCell(coord)}
@@ -147,30 +140,32 @@ export default function Board({
       );
     }
 
-    if (!interactive) {
+    if (onAttack) {
       return (
-        <div
+        <button
           key={coord}
-          className={`${styles.cell} ${shipClasses(segment)}`}
+          type="button"
+          className={`${styles.cell} ${styles.target} ${shotClasses(outcome)}`}
           data-coord={coord}
-          data-ship={segment?.shipId}
+          data-attacked={isAttacked}
+          data-outcome={outcome}
+          aria-label={`${cellLabel}${shotLabel}`}
+          disabled={isAttacked || attackDisabled}
+          onClick={() => onAttack(coord)}
         />
       );
     }
 
-    const outcome = shots.get(coord);
-    const isAttacked = outcome !== undefined;
     return (
-      <button
+      <div
         key={coord}
-        type="button"
-        className={`${styles.cell} ${styles.target} ${isAttacked ? styles.attacked : ""} ${outcome === "hit" ? styles.hit : ""}`}
+        className={`${styles.cell} ${shipClasses(segment)} ${shotClasses(outcome)}`}
         data-coord={coord}
+        data-ship={segment?.shipId}
         data-attacked={isAttacked}
         data-outcome={outcome}
-        aria-label={`${cellLabel}${isAttacked ? `, attacked, ${outcome}` : ""}`}
-        disabled={isAttacked}
-        onClick={() => handleAttack(coord)}
+        role="img"
+        aria-label={`${cellLabel}${shipLabel}${shotLabel}`}
       />
     );
   }
@@ -183,7 +178,7 @@ export default function Board({
         <p className={styles.motto}>{motto}</p>
       </header>
       <div
-        className={styles.grid}
+        className={`${styles.grid} ${onAttack && attackDisabled ? styles.waiting : ""}`}
         onMouseLeave={placement ? () => placement.onHoverCell(null) : undefined}
         onBlur={placement ? () => placement.onHoverCell(null) : undefined}
       >
@@ -200,26 +195,20 @@ export default function Board({
           ...COLUMN_LABELS.map((col) => renderCell(col, rowIndex)),
         ])}
       </div>
-      {interactive && (
-        <>
-          <p className={styles.status}>
-            Shots fired: <span data-testid="shots-fired">{shots.size}</span>
-            {" · "}
-            Hits: <span data-testid="hits">{hitCount}</span>
-          </p>
-          <div className={styles.dispatchArea} aria-live="polite">
-            {dispatch && (
-              <p
-                key={dispatch.id}
-                className={`${styles.dispatch} ${dispatch.outcome === "hit" ? styles.dispatchHit : styles.dispatchMiss}`}
-                data-testid="battle-dispatch"
-                data-outcome={dispatch.outcome}
-              >
-                {dispatch.text}
-              </p>
-            )}
-          </div>
-        </>
+      {status && <p className={styles.status}>{status}</p>}
+      {dispatch !== undefined && (
+        <div className={styles.dispatchArea} aria-live="polite">
+          {dispatch && (
+            <p
+              key={dispatch.id}
+              className={`${styles.dispatch} ${dispatch.outcome === "hit" ? styles.dispatchHit : styles.dispatchMiss}`}
+              data-testid="battle-dispatch"
+              data-outcome={dispatch.outcome}
+            >
+              {dispatch.text}
+            </p>
+          )}
+        </div>
       )}
       {children}
     </section>

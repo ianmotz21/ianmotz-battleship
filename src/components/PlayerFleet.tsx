@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Board from "@/components/Board";
+import { useEffect, useState, type ReactNode } from "react";
+import Board, { type Dispatch, type Shots } from "@/components/Board";
 import {
   FLEET,
   checkPlacement,
@@ -26,8 +26,24 @@ function describeProblem(ship: ShipType, result: PlacementCheck): string {
   return `Your ${ship.name} would collide with your ${getShip(result.blockedBy).name}.`;
 }
 
-export default function PlayerFleet() {
-  const [placements, setPlacements] = useState<Placements>({});
+type PlayerFleetProps = {
+  placements: Placements;
+  onPlacementsChange: (next: Placements) => void;
+  /** Once the battle starts, ships can no longer be moved. */
+  locked: boolean;
+  shots: Shots;
+  dispatch: Dispatch | null;
+  status?: ReactNode;
+};
+
+export default function PlayerFleet({
+  placements,
+  onPlacementsChange: setPlacements,
+  locked,
+  shots,
+  dispatch,
+  status: battleStatus,
+}: PlayerFleetProps) {
   const [selectedId, setSelectedId] = useState<ShipId | null>(FLEET[0].id);
   const [orientation, setOrientation] = useState<Orientation>("horizontal");
   const [hoveredCoord, setHoveredCoord] = useState<string | null>(null);
@@ -39,6 +55,9 @@ export default function PlayerFleet() {
     selectedShip && hoveredCoord ? checkPlacement(placements, selectedShip, hoveredCoord, orientation) : null;
 
   useEffect(() => {
+    if (locked) {
+      return;
+    }
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key.toLowerCase() !== "r" || event.ctrlKey || event.metaKey || event.altKey) {
         return;
@@ -48,7 +67,7 @@ export default function PlayerFleet() {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [locked]);
 
   function selectShip(id: ShipId) {
     setSelectedId(id);
@@ -93,6 +112,20 @@ export default function PlayerFleet() {
     status = `Place your ${selectedShip.name} (${selectedShip.size} squares): choose its starting square.`;
   } else {
     status = "The fleet is assembled. Choose a ship to reposition it.";
+  }
+
+  if (locked) {
+    return (
+      <Board
+        side="rome"
+        title="Roman Fleet"
+        motto="Senatus Populusque Romanus"
+        ships={placements}
+        shots={shots}
+        status={battleStatus}
+        dispatch={dispatch}
+      />
+    );
   }
 
   return (

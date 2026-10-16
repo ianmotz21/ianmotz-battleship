@@ -56,35 +56,6 @@
   background-repeat: repeat-x;
 }
 
-.boards {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 2rem;
-}
-
-.versus {
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.versusLine {
-  width: 1px;
-  height: 80px;
-  background: linear-gradient(180deg, transparent, var(--bronze), transparent);
-}
-
-.versusText {
-  font-family: var(--font-serif-stack);
-  font-style: italic;
-  font-size: 1.1rem;
-  color: var(--bronze-light);
-}
-
 .footer {
   margin-top: auto;
   font-family: var(--font-display-stack);
@@ -92,20 +63,6 @@
   letter-spacing: 0.4em;
   text-transform: uppercase;
   color: var(--bronze-dark);
-}
-
-@media (max-width: 960px) {
-  .versus {
-    flex-direction: row;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .versusLine {
-    width: 80px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--bronze), transparent);
-  }
 }
 
 @media (max-width: 520px) {

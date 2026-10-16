@@ -1,5 +1,4 @@
-import EnemyFleet from "@/components/EnemyFleet";
-import PlayerFleet from "@/components/PlayerFleet";
+import Game from "@/components/Game";
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -12,15 +11,7 @@ export default function Home() {
         <div className={styles.meander} aria-hidden="true" />
       </header>
 
-      <div className={styles.boards}>
-        <PlayerFleet />
-        <div className={styles.versus} aria-hidden="true">
-          <span className={styles.versusLine} />
-          <span className={styles.versusText}>contra</span>
-          <span className={styles.versusLine} />
-        </div>
-        <EnemyFleet />
-      </div>
+      <Game />
 
       <footer className={styles.footer}>
         Roma · Carthago

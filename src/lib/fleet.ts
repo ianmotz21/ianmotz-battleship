@@ -102,3 +102,7 @@ export function randomPlacements(random: () => number = Math.random): Placements
   }
   return placements;
 }
+
+export function shipAt(placements: Placements, coord: string): ShipId | undefined {
+  return FLEET.find((ship) => placements[ship.id]?.cells.includes(coord))?.id;
+}

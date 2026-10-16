@@ -88,6 +88,11 @@
   gap: 2px;
 }
 
+.waiting .target:not(.attacked) {
+  cursor: wait;
+  filter: saturate(0.6) brightness(0.85);
+}
+
 .label {
   display: flex;
   align-items: center;
@@ -99,6 +104,7 @@
 }
 
 .cell {
+  position: relative;
   background: linear-gradient(155deg, var(--sea-light) 0%, var(--sea) 70%);
   border: 1px solid var(--sea-line);
   border-radius: 1px;
@@ -337,5 +343,10 @@
 
   .label {
     font-size: 0.6rem;
+  }
+
+  /* Longer remarks wrap to three lines on narrow phones */
+  .dispatchArea {
+    min-height: 5rem;
   }
 }
