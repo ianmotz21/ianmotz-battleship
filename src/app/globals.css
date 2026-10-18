@@ -1,0 +1,55 @@
+:root {
+  /* Shared */
+  --bronze: #b08d57;
+  --bronze-light: #d4b483;
+  --bronze-dark: #7a5c32;
+  --ink: #0b111c;
+  --parchment: #ece3d0;
+
+  /* Rome */
+  --rome-red: #8e1b1b;
+  --rome-red-deep: #5e1010;
+  --rome-marble: #f3eee4;
+  --rome-marble-vein: #ddd4c4;
+  --rome-sea: #2f6f8f;
+  --rome-sea-light: #4a8fae;
+
+  /* Carthage */
+  --carthage-navy: #0f1d38;
+  --carthage-purple: #4f1f52;
+  --carthage-teal: #1c5d66;
+  --carthage-teal-light: #2b7d87;
+
+  --font-display-stack: var(--font-display), "Trajan Pro", Georgia, serif;
+  --font-serif-stack: var(--font-serif), Georgia, "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  min-height: 100%;
+  background: var(--ink);
+}
+
+body {
+  min-height: 100vh;
+}
+
+body {
+  color: var(--parchment);
+  font-family: var(--font-serif-stack);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(142, 27, 27, 0.18) 0%,
+      transparent 38%,
+      transparent 62%,
+      rgba(79, 31, 82, 0.28) 100%
+    ),
+    radial-gradient(ellipse at 50% -10%, #1c2a40 0%, var(--ink) 70%);
+  -webkit-font-smoothing: antialiased;
+}

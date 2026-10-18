@@ -1,0 +1,669 @@
+.board {
+  --panel-bg: transparent;
+  --panel-border: var(--bronze);
+  --accent: var(--bronze);
+  --heading: var(--parchment);
+  --motto: var(--parchment);
+  --label: var(--bronze);
+  --sea: #24506a;
+  --sea-light: #33708f;
+  --sea-line: rgba(255, 255, 255, 0.12);
+  --cell: clamp(1rem, calc((100vw - 7.5rem) / 10), 2rem);
+  --label-col: 2.25rem;
+  --spray: rgba(232, 245, 255, 0.95);
+  --fire: radial-gradient(
+    circle,
+    rgba(255, 226, 168, 0.95) 0 14%,
+    rgba(240, 128, 48, 0.75) 32%,
+    rgba(150, 40, 16, 0.35) 52%,
+    transparent 70%
+  );
+  --smoke: radial-gradient(circle, rgba(72, 64, 60, 0.75) 0 22%, rgba(60, 54, 52, 0.4) 42%, transparent 66%);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.75rem 1.75rem 2rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 4px rgba(0, 0, 0, 0.25),
+    0 0 0 5px var(--panel-border),
+    0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+.board::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.title {
+  font-family: var(--font-display-stack);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--heading);
+}
+
+.motto {
+  font-family: var(--font-serif-stack);
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--motto);
+}
+
+.spqr {
+  padding: 0.15rem 0.6rem;
+  font-family: var(--font-display-stack);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--bronze-light);
+  background: var(--rome-red);
+  border: 1px solid var(--bronze);
+}
+
+.tanit {
+  width: 22px;
+  height: 26px;
+  fill: none;
+  stroke: var(--bronze-light);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+}
+
+.grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--label-col) repeat(10, var(--cell));
+  grid-template-rows: 1.75rem repeat(10, var(--cell));
+  gap: 2px;
+}
+
+.waiting .target:not(.attacked) {
+  cursor: wait;
+  filter: saturate(0.6) brightness(0.85);
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display-stack);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.cell {
+  --glint: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.13) 48%, transparent 62%) 0 0 / 300% 300%;
+  position: relative;
+  background: var(--glint), linear-gradient(155deg, var(--sea-light) 0%, var(--sea) 70%);
+  border: 1px solid var(--sea-line);
+  border-radius: 1px;
+  animation: swell 9s linear infinite;
+  animation-delay: calc(var(--wave, 0) * -0.35s);
+}
+
+/* A band of light drifts across each square; staggered delays make it roll across the board. */
+@keyframes swell {
+  from {
+    background-position: 100% 100%, 0 0;
+  }
+  to {
+    background-position: 0 0, 0 0;
+  }
+}
+
+.status {
+  margin-top: -0.25rem;
+  font-family: var(--font-serif-stack);
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--motto);
+}
+
+/* Battle dispatch: brief general's remark after each shot */
+.dispatchArea {
+  align-self: stretch;
+  contain: inline-size;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 4.9rem;
+  margin-top: -0.5rem;
+}
+
+.dispatch {
+  max-width: 100%;
+  padding: 0.4rem 0.75rem;
+  font-family: var(--font-serif-stack);
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.35;
+  text-align: center;
+  border-top: 1px solid rgba(176, 141, 87, 0.35);
+  border-bottom: 1px solid rgba(176, 141, 87, 0.35);
+  animation: dispatch 5s ease forwards;
+}
+
+.dispatchRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  max-width: 100%;
+}
+
+.dispatchRow .dispatch {
+  min-width: 0;
+}
+
+/* The commander who speaks: Scipio for Rome, Hannibal for Carthage */
+.medallion {
+  flex-shrink: 0;
+  width: 2.6rem;
+  height: 2.6rem;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+  animation: dispatch 5s ease forwards;
+}
+
+.dispatchHeadline {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-family: var(--font-display-stack);
+  font-size: 0.85rem;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--heading);
+}
+
+.dispatchMiss {
+  color: var(--motto);
+}
+
+.dispatchHit {
+  color: var(--bronze-light);
+}
+
+@keyframes dispatch {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  6% {
+    opacity: 1;
+    transform: none;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Clickable squares: attack targets (enemy) and placement squares (player) */
+.target,
+.placeTarget {
+  position: relative;
+  padding: 0;
+  font: inherit;
+  appearance: none;
+}
+
+.target {
+  cursor: crosshair;
+  transition: filter 120ms ease, box-shadow 120ms ease;
+}
+
+.placeTarget {
+  cursor: pointer;
+}
+
+.target:not(:disabled):hover {
+  filter: brightness(1.25);
+  box-shadow: inset 0 0 0 1px var(--bronze-light);
+}
+
+.target:focus-visible,
+.placeTarget:focus-visible {
+  outline: 2px solid var(--bronze-light);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+.attacked {
+  cursor: default;
+  background: var(--glint), linear-gradient(155deg, var(--sea) 0%, #0d2a33 100%);
+}
+
+/* A miss: a ring of water and a burst of spray where the shot landed */
+.miss::before {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  z-index: 2;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 6%, var(--spray) 0 5%, transparent 6%),
+    radial-gradient(circle at 94% 50%, var(--spray) 0 5%, transparent 6%),
+    radial-gradient(circle at 50% 94%, var(--spray) 0 5%, transparent 6%),
+    radial-gradient(circle at 6% 50%, var(--spray) 0 5%, transparent 6%),
+    radial-gradient(circle at 82% 18%, var(--spray) 0 4%, transparent 5%),
+    radial-gradient(circle at 18% 82%, var(--spray) 0 4%, transparent 5%),
+    radial-gradient(circle at 82% 82%, var(--spray) 0 4%, transparent 5%),
+    radial-gradient(circle at 18% 18%, var(--spray) 0 4%, transparent 5%),
+    radial-gradient(circle, transparent 0 40%, rgba(225, 242, 255, 0.75) 42% 46%, transparent 48%);
+  opacity: 0;
+  pointer-events: none;
+  animation: splash 900ms ease-out 160ms;
+}
+
+@keyframes splash {
+  0% {
+    opacity: 0;
+    transform: scale(0.25);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+.attacked::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--parchment) 0 28%,
+    var(--bronze-light) 30% 55%,
+    var(--bronze-dark) 57% 68%,
+    transparent 70%
+  );
+  animation: strike 220ms ease-out;
+}
+
+/* A miss leaves pale ripples; a hit leaves a burning marker */
+.miss::after {
+  inset: 16%;
+  background: radial-gradient(
+    circle,
+    rgba(236, 246, 255, 0.95) 0 15%,
+    transparent 18% 34%,
+    rgba(236, 246, 255, 0.6) 37% 45%,
+    transparent 48% 60%,
+    rgba(236, 246, 255, 0.3) 63% 69%,
+    transparent 72%
+  );
+  filter: drop-shadow(0 0 1px rgba(0, 30, 50, 0.6));
+}
+
+/* A hit: scorched water and a burning red-orange marker */
+.hit {
+  background: linear-gradient(155deg, #4a2a22 0%, #24120f 100%);
+}
+
+.hit::after {
+  inset: 18%;
+  background: radial-gradient(
+    circle,
+    #ffe2a8 0 20%,
+    #f08a3c 24% 46%,
+    #a8261c 50% 66%,
+    transparent 70%
+  );
+  box-shadow: 0 0 8px rgba(240, 138, 60, 0.55);
+}
+
+/* A hit: a burst of fire that turns to rising smoke, then the flame keeps flickering */
+.hit::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  z-index: 2;
+  border-radius: 50%;
+  background: var(--fire);
+  opacity: 0;
+  pointer-events: none;
+  animation: burst-smoke 1.8s ease-out 160ms;
+}
+
+@keyframes burst-smoke {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+    background: var(--fire);
+  }
+  12% {
+    opacity: 1;
+  }
+  32% {
+    opacity: 0.85;
+    transform: scale(1.3);
+    background: var(--fire);
+  }
+  33% {
+    opacity: 0.7;
+    transform: scale(0.55);
+    background: var(--smoke);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-70%) scale(1.25);
+    background: var(--smoke);
+  }
+}
+
+.hit:not(.sunk)::after {
+  animation:
+    strike 220ms ease-out,
+    flicker 1.6s ease-in-out 400ms infinite alternate;
+}
+
+@keyframes flicker {
+  to {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes impact {
+  0%,
+  100% {
+    transform: none;
+    filter: none;
+  }
+  12% {
+    transform: translate(-2px, 1px) rotate(-4deg);
+    filter: brightness(2) saturate(1.4);
+  }
+  30% {
+    transform: translate(2px, -1px) rotate(3deg);
+  }
+  50% {
+    transform: translate(-1px, 1px) rotate(-1.5deg);
+  }
+  70% {
+    transform: translate(1px, 0);
+  }
+}
+
+@keyframes strike {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Placed ships: the hull is drawn beneath the grid, so ship squares are see-through */
+.ship,
+.cell.ship.attacked {
+  background: transparent;
+  border-color: transparent;
+}
+
+.hull {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+
+/* A sinking ship flares, then settles dark and low in the water */
+.hullSunk {
+  filter: grayscale(0.7) brightness(0.5);
+  transform: scale(0.94);
+  animation: founder 1.6s ease-out;
+}
+
+@keyframes founder {
+  0% {
+    filter: none;
+    transform: none;
+  }
+  15% {
+    filter: brightness(1.7) sepia(0.5) saturate(1.6);
+    transform: none;
+  }
+}
+
+.sinkFlash {
+  position: absolute;
+  inset: -12%;
+  z-index: 3;
+  border-radius: 40%;
+  background: radial-gradient(
+    ellipse,
+    rgba(255, 214, 140, 0.9) 0%,
+    rgba(232, 110, 40, 0.65) 35%,
+    rgba(120, 30, 10, 0.3) 60%,
+    transparent 75%
+  );
+  opacity: 0;
+  pointer-events: none;
+  animation: sink-flash 1.5s ease-out 0.15s;
+}
+
+.sinkFlash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(225, 242, 255, 0.7);
+  border-radius: 40%;
+  opacity: 0;
+  animation: sink-ripple 1.6s ease-out 0.5s;
+}
+
+@keyframes sink-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes sink-ripple {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+.startH {
+  border-top-left-radius: 50%;
+  border-bottom-left-radius: 50%;
+}
+
+.endH {
+  border-top-right-radius: 50%;
+  border-bottom-right-radius: 50%;
+}
+
+.startV {
+  border-top-left-radius: 50%;
+  border-top-right-radius: 50%;
+}
+
+.endV {
+  border-bottom-left-radius: 50%;
+  border-bottom-right-radius: 50%;
+}
+
+/* Sunk ships: charred, waterlogged timber */
+.cell.ship {
+  animation: none;
+}
+
+.cell.hit {
+  z-index: 1;
+  animation: impact 520ms ease-out 160ms;
+}
+
+.sunk.hit::after {
+  filter: saturate(0.5) brightness(0.8);
+}
+
+/* Placement preview while hovering a starting square */
+.previewValid {
+  background: linear-gradient(155deg, rgba(212, 179, 122, 0.9) 0%, rgba(176, 141, 87, 0.9) 100%);
+  border-color: var(--bronze-dark);
+}
+
+.previewInvalid {
+  background: linear-gradient(155deg, #b8564b 0%, #8a2a22 100%);
+  border-color: #6b1c16;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .target {
+    transition: none;
+  }
+
+  .cell,
+  .cell.hit,
+  .attacked::after,
+  .hit:not(.sunk)::after,
+  .miss::before,
+  .hit::before,
+  .hullSunk,
+  .sinkFlash,
+  .sinkFlash::after,
+  .dispatch,
+  .medallion {
+    animation: none;
+  }
+}
+
+/* Rome: marble, imperial red, bronze */
+.rome {
+  --panel-bg:
+    linear-gradient(115deg, transparent 40%, rgba(180, 168, 148, 0.18) 46%, transparent 52%),
+    linear-gradient(35deg, transparent 60%, rgba(180, 168, 148, 0.14) 64%, transparent 68%),
+    linear-gradient(180deg, var(--rome-marble) 0%, var(--rome-marble-vein) 100%);
+  --panel-border: var(--bronze);
+  --accent: var(--rome-red);
+  --heading: var(--rome-red);
+  --motto: #5c4a36;
+  --label: var(--rome-red-deep);
+  --sea: var(--rome-sea);
+  --sea-light: var(--rome-sea-light);
+  --sea-line: rgba(122, 92, 50, 0.45);
+}
+
+/* Carthage: deep navy, Tyrian purple, teal, bronze */
+.carthage {
+  --panel-bg:
+    radial-gradient(ellipse at 100% 0%, rgba(79, 31, 82, 0.75) 0%, transparent 60%),
+    linear-gradient(180deg, var(--carthage-navy) 0%, #0a1428 100%);
+  --panel-border: var(--bronze);
+  --accent: var(--carthage-purple);
+  --heading: var(--bronze-light);
+  --motto: #b9a8c4;
+  --label: var(--bronze);
+  --sea: var(--carthage-teal);
+  --sea-light: var(--carthage-teal-light);
+  --sea-line: rgba(176, 141, 87, 0.35);
+}
+
+@media (max-width: 640px) {
+  /* One board fills the phone width, so squares can be bigger */
+  .board {
+    --cell: clamp(1.3rem, calc((100vw - 5.5rem) / 10), 2.6rem);
+    --label-col: 1.25rem;
+    gap: 0.65rem;
+    padding: 0.8rem 0.5rem 0.9rem;
+  }
+
+  .header {
+    flex-direction: row;
+    gap: 0.55rem;
+  }
+
+  .title {
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+  }
+
+  .motto,
+  .status {
+    display: none;
+  }
+
+  .spqr {
+    padding: 0.1rem 0.45rem;
+    font-size: 0.62rem;
+  }
+
+  .tanit {
+    width: 16px;
+    height: 19px;
+  }
+
+  .grid {
+    grid-template-rows: 1.25rem repeat(10, var(--cell));
+  }
+
+  .label {
+    font-size: 0.6rem;
+  }
+
+  /* Longer remarks wrap to three lines on narrow phones */
+  .dispatchArea {
+    min-height: 5.6rem;
+    margin-top: -0.2rem;
+  }
+
+  .dispatch {
+    font-size: 0.92rem;
+  }
+
+  .dispatchRow {
+    gap: 0.45rem;
+  }
+
+  .medallion {
+    width: 2rem;
+    height: 2rem;
+  }
+}
