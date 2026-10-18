@@ -121,3 +121,7 @@ During development, each step was checked with type checks, linting, production 
 - player shots never being checked against the hidden enemy fleet;
 - boards overflowing the screen on mobile;
 - a production build failure caused by random values during pre-rendering.
+
+### Final review
+
+The finished code was reviewed with [Devin Review](https://docs.devin.ai), Devin's automated pull-request reviewer, in the "Final code review" pull request.
