@@ -102,7 +102,7 @@ Average shots needed to sink a full random fleet, from 2,000 simulated games per
 
 ## Tests
 
-`npm test` runs `src/lib/gameLogic.test.ts` with Node's built-in test runner, using [`tsx`](https://github.com/privatenumber/tsx) to run TypeScript directly. The tests use a fixed fleet, so results are repeatable, and check that:
+`npm test` runs `src/lib/gameLogic.test.ts` and `src/lib/browserState.test.ts` with Node's built-in test runner, using [`tsx`](https://github.com/privatenumber/tsx) to run TypeScript directly. The tests use a fixed fleet, so results are repeatable, and check that:
 
 - shots on ship squares are hits and shots on open water are misses;
 - the same square can't be fired at twice;
@@ -110,7 +110,8 @@ Average shots needed to sink a full random fleet, from 2,000 simulated games per
 - placements can't overlap or run off the board, and random fleets are always legal;
 - the AI never repeats a square, and it follows up hits on neighbouring squares and along lines;
 - every difficulty level can finish a game without repeating a square; the Recruit mostly ignores hits, while the General follows lines of hits and never aims where no remaining ship could fit;
-- the leaderboard ranks victories by fewest shots and leaves out defeats.
+- the leaderboard ranks victories by fewest shots and leaves out defeats;
+- saving a result keeps one that another browser tab saved in the meantime, and muting silences sounds that are already playing (using a stand-in for the browser's storage and audio).
 
 ## Built with Devin
 
