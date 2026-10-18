@@ -99,3 +99,41 @@
     font-size: 0.65rem;
   }
 }
+
+/* Battlefield backdrop: a faint portolan chart with slowly drifting torchlight */
+.main::before,
+.main::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.main::before {
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 800' preserveAspectRatio='xMidYMid slice'%3E%3Cg fill='none' stroke='%23d4b483' stroke-width='0.8'%3E%3Cpath d='M330 300L1930 300M330 300L1808 912M330 300L1461 1431M330 300L942 1778M330 300L330 1900M330 300L-282 1778M330 300L-801 1431M330 300L-1148 912M330 300L-1270 300M330 300L-1148 -312M330 300L-801 -831M330 300L-282 -1178M330 300L330 -1300M330 300L942 -1178M330 300L1461 -831M330 300L1808 -312M900 540L2500 540M900 540L2378 1152M900 540L2031 1671M900 540L1512 2018M900 540L900 2140M900 540L288 2018M900 540L-231 1671M900 540L-578 1152M900 540L-700 540M900 540L-578 -72M900 540L-231 -591M900 540L288 -938M900 540L900 -1060M900 540L1512 -938M900 540L2031 -591M900 540L2378 -72' stroke-opacity='0.55'/%3E%3Ccircle cx='330' cy='300' r='62'/%3E%3Ccircle cx='330' cy='300' r='68' stroke-dasharray='2 5'/%3E%3Ccircle cx='900' cy='540' r='62'/%3E%3Ccircle cx='900' cy='540' r='68' stroke-dasharray='2 5'/%3E%3C/g%3E%3Cg fill='%23d4b483' fill-opacity='0.5'%3E%3Cpolygon points='330.0,254.0 334.2,289.8 349.5,280.5 340.2,295.8 376.0,300.0 340.2,304.2 349.5,319.5 334.2,310.2 330.0,346.0 325.8,310.2 310.5,319.5 319.8,304.2 284.0,300.0 319.8,295.8 310.5,280.5 325.8,289.8'/%3E%3Cpolygon points='900.0,494.0 904.2,529.8 919.5,520.5 910.2,535.8 946.0,540.0 910.2,544.2 919.5,559.5 904.2,550.2 900.0,586.0 895.8,550.2 880.5,559.5 889.8,544.2 854.0,540.0 889.8,535.8 880.5,520.5 895.8,529.8'/%3E%3C/g%3E%3C/svg%3E") center / cover no-repeat;
+  opacity: 0.14;
+}
+
+.main::after {
+  inset: -15%;
+  background:
+    radial-gradient(circle at 18% 28%, rgba(214, 150, 80, 0.12), transparent 38%),
+    radial-gradient(circle at 82% 72%, rgba(90, 150, 180, 0.09), transparent 42%);
+  animation: torchlight 36s ease-in-out infinite alternate;
+}
+
+@keyframes torchlight {
+  from {
+    transform: translate3d(-4%, -2%, 0);
+  }
+  to {
+    transform: translate3d(4%, 3%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main::after {
+    animation: none;
+  }
+}

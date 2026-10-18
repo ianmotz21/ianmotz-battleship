@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import BattleIntro from "@/components/BattleIntro";
 import Celebration from "@/components/Celebration";
 import Board, { coordLabel, type Dispatch, type Shots, type Side } from "@/components/Board";
 import HomeScreen from "@/components/HomeScreen";
+import { Banner, Laurel } from "@/components/Insignia";
 import PlayerFleet from "@/components/PlayerFleet";
 import { getDifficulty, pickTarget, type Difficulty } from "@/lib/ai";
 import { addRecord } from "@/lib/leaderboard";
@@ -288,6 +290,14 @@ function Battle({ difficulty, onPlayAgain, onMainMenu }: BattleProps) {
   const accuracy = shotsAtCarthage.size ? Math.round((romeHits / shotsAtCarthage.size) * 100) : 0;
 
   const adversary = getDifficulty(difficulty);
+  const reportStats: [label: string, value: string | number][] = [
+    ["Shots fired", shotsAtCarthage.size],
+    ["Hits", romeHits],
+    ["Accuracy", `${accuracy}%`],
+    ["Enemy ships sunk", `${carthageSunk.length} / ${FLEET.length}`],
+    ["Roman ships lost", `${romeSunk.length} / ${FLEET.length}`],
+    ["Adversary", adversary.name],
+  ];
 
   let attention: Side | null = null;
   if (!winner && !fleetReady && view !== "rome") {
@@ -298,6 +308,7 @@ function Battle({ difficulty, onPlayAgain, onMainMenu }: BattleProps) {
 
   return (
     <div className={styles.game}>
+      <BattleIntro adversary={adversary.name} />
       <div className={styles.bar}>
         <p className={styles.adversary} data-testid="adversary" data-difficulty={difficulty}>
           Adversary: <strong>{adversary.name}</strong> <span>({adversary.level})</span>
@@ -316,17 +327,27 @@ function Battle({ difficulty, onPlayAgain, onMainMenu }: BattleProps) {
           data-testid="game-result"
           data-result={winner === "rome" ? "victory" : "defeat"}
         >
-          <p className={styles.resultEyebrow}>{winner === "rome" ? "Roma Victrix" : "Vae Victis"}</p>
-          <h2 className={styles.resultTitle}>{winner === "rome" ? "Victory" : "Defeat"}</h2>
+          <Banner side="rome" className={`${styles.reportBanner} ${styles.bannerRome}`} />
+          <Banner side="carthage" className={`${styles.reportBanner} ${styles.bannerCarthage}`} />
+          <p className={styles.resultEyebrow}>Battle Report · {winner === "rome" ? "Roma Victrix" : "Vae Victis"}</p>
+          <div className={styles.resultHeading}>
+            <Laurel className={styles.laurel} />
+            <h2 className={styles.resultTitle}>{winner === "rome" ? "Rome is Victorious" : "Carthage Prevails"}</h2>
+            <Laurel className={styles.laurel} flip />
+          </div>
           <p className={styles.resultText}>
             {winner === "rome"
               ? "Carthage's fleet lies at the bottom of the Mediterranean. Scipio salutes you, Admiral."
               : "Hannibal's ships have sent the Roman fleet to the depths. Carthage rules the sea today."}
           </p>
-          <p className={styles.resultStats}>
-            {shotsAtCarthage.size} shots · {romeHits} hits · {accuracy}% accuracy · {carthageSunk.length} of{" "}
-            {FLEET.length} Carthaginian ships sunk · vs. {adversary.name}
-          </p>
+          <dl className={styles.resultStats} data-testid="result-stats">
+            {reportStats.map(([label, value]) => (
+              <div key={label} className={styles.stat}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
           <div className={styles.resultActions}>
             <button ref={playAgainRef} type="button" className={styles.playAgain} onClick={onPlayAgain}>
               Play again

@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useId, type CSSProperties, type ReactNode } from "react";
+import { Medallion } from "@/components/Insignia";
 import type { ShotOutcome } from "@/lib/battleMessages";
 import { BOARD_SIZE, COLUMN_LABELS, FLEET, getShip, type Placements, type ShipId } from "@/lib/fleet";
 import styles from "./Board.module.css";
@@ -73,6 +74,82 @@ function Emblem({ side }: { side: Side }) {
   );
 }
 
+type ShipPlacement = NonNullable<Placements[ShipId]>;
+
+/** Covers the ship's squares, so its hull can be drawn as one piece across them. */
+function shipArea(placed: ShipPlacement, size: number): CSSProperties {
+  const vertical = placed.orientation === "vertical";
+  const col = Math.min(...placed.cells.map((cell) => COLUMN_LABELS.indexOf(cell[0])));
+  const row = Math.min(...placed.cells.map((cell) => Number(cell.slice(1)) - 1));
+  // +2 skips the row/column of labels (grid lines are 1-based).
+  return {
+    gridColumn: `${col + 2} / span ${vertical ? 1 : size}`,
+    gridRow: `${row + 2} / span ${vertical ? size : 1}`,
+  };
+}
+
+/**
+ * A top-down galley: bronze ram and painted eyes at the bow, oars along the
+ * sides, and a curled stern ornament. Drawn bow-left, then turned for vertical ships.
+ */
+function Hull({ size, vertical, sunk, side, style }: {
+  size: number;
+  vertical: boolean;
+  sunk: boolean;
+  side: Side;
+  style: CSSProperties;
+}) {
+  const id = useId();
+  const L = size * 100;
+  const oars: number[] = [];
+  for (let x = 90; x <= L - 70; x += 55) {
+    oars.push(x);
+  }
+  const stripe = side === "rome" ? "#a82424" : "#6b2f70";
+  return (
+    <svg
+      className={`${styles.hull} ${sunk ? styles.hullSunk : ""}`}
+      style={style}
+      viewBox={vertical ? `0 0 100 ${L}` : `0 0 ${L} 100`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={`${id}-wood`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#9a6a3c" />
+          <stop offset="0.5" stopColor="#7a4f2a" />
+          <stop offset="1" stopColor="#4e301a" />
+        </linearGradient>
+      </defs>
+      <g transform={vertical ? "translate(100 0) rotate(90)" : undefined}>
+        <g stroke="#3b2412" strokeWidth="3.5" strokeLinecap="round">
+          {oars.map((x) => (
+            <path key={x} d={`M${x} 24L${x - 14} 5M${x} 76L${x - 14} 95`} />
+          ))}
+        </g>
+        <path
+          d={`M6 50C18 34 34 24 60 22L${L - 40} 22C${L - 18} 22 ${L - 6} 34 ${L - 6} 50C${L - 6} 66 ${L - 18} 78 ${L - 40} 78L60 78C34 76 18 66 6 50Z`}
+          fill={`url(#${id}-wood)`}
+          stroke="#2e1c0e"
+          strokeWidth="2.5"
+        />
+        <path d={`M52 28.5H${L - 38}M52 71.5H${L - 38}`} stroke={stripe} strokeWidth="4" />
+        <path
+          d={`M42 50C50 41 58 37 72 37L${L - 44} 37C${L - 30} 37 ${L - 22} 43 ${L - 22} 50C${L - 22} 57 ${L - 30} 63 ${L - 44} 63L72 63C58 63 50 59 42 50Z`}
+          fill="#c4935c"
+          opacity="0.5"
+        />
+        <path d={`M72 44H${L - 44}M72 50H${L - 44}M72 56H${L - 44}`} stroke="rgba(60, 35, 15, 0.45)" strokeWidth="1.2" />
+        <path d="M0 50L13 43.5V56.5Z" fill="#c9974f" stroke="#6e4a1e" strokeWidth="1.5" />
+        <circle cx="30" cy="38.5" r="3" fill="#f3eee4" />
+        <circle cx="30" cy="61.5" r="3" fill="#f3eee4" />
+        <circle cx={L / 2} cy="50" r="5" fill="#3b2412" />
+        <path d={`M${L - 16} 38C${L - 3} 38 ${L - 3} 62 ${L - 16} 62`} fill="none" stroke="#c9974f" strokeWidth="3" />
+      </g>
+    </svg>
+  );
+}
+
 function mapShipSegments(ships: Placements = {}): Map<string, ShipSegment> {
   const segments = new Map<string, ShipSegment>();
   for (const { id } of FLEET) {
@@ -103,6 +180,12 @@ export default function Board({
   children,
 }: BoardProps) {
   const segments = mapShipSegments(ships);
+  const placedShips = FLEET.flatMap(({ id, size }) => {
+    const placed = ships?.[id];
+    return placed ? [{ id, size, placed, isSunk: sunk.includes(id) }] : [];
+  });
+  // Hit praise comes from the attacker's general, a miss draws a jab from the defender's.
+  const speaker = dispatch && (dispatch.outcome === "hit") === (side === "rome") ? "hannibal" : "scipio";
 
   function shipClasses(segment: ShipSegment | undefined): string {
     if (!segment) {
@@ -199,6 +282,16 @@ export default function Board({
         onMouseLeave={placement ? () => placement.onHoverCell(null) : undefined}
         onBlur={placement ? () => placement.onHoverCell(null) : undefined}
       >
+        {placedShips.map(({ id, size, placed, isSunk }) => (
+          <Hull
+            key={id}
+            size={size}
+            vertical={placed.orientation === "vertical"}
+            sunk={isSunk}
+            side={side}
+            style={shipArea(placed, size)}
+          />
+        ))}
         <div />
         {COLUMN_LABELS.map((col) => (
           <div key={col} className={styles.label}>
@@ -211,24 +304,31 @@ export default function Board({
           </div>,
           ...COLUMN_LABELS.map((col) => renderCell(col, rowIndex)),
         ])}
+        {placedShips
+          .filter(({ isSunk }) => isSunk)
+          .map(({ id, size, placed }) => (
+            <span key={`sink-${id}`} className={styles.sinkFlash} style={shipArea(placed, size)} aria-hidden="true" />
+          ))}
       </div>
       {status && <p className={styles.status}>{status}</p>}
       {dispatch !== undefined && (
         <div className={styles.dispatchArea} aria-live="polite">
           {dispatch && (
-            <p
-              key={dispatch.id}
-              className={`${styles.dispatch} ${dispatch.outcome === "hit" ? styles.dispatchHit : styles.dispatchMiss}`}
-              data-testid="battle-dispatch"
-              data-outcome={dispatch.outcome}
-            >
-              {dispatch.headline && (
-                <strong className={styles.dispatchHeadline} data-testid="sunk-announcement">
-                  {dispatch.headline}
-                </strong>
-              )}
-              {dispatch.text}
-            </p>
+            <div key={dispatch.id} className={styles.dispatchRow}>
+              <Medallion general={speaker} className={styles.medallion} />
+              <p
+                className={`${styles.dispatch} ${dispatch.outcome === "hit" ? styles.dispatchHit : styles.dispatchMiss}`}
+                data-testid="battle-dispatch"
+                data-outcome={dispatch.outcome}
+              >
+                {dispatch.headline && (
+                  <strong className={styles.dispatchHeadline} data-testid="sunk-announcement">
+                    {dispatch.headline}
+                  </strong>
+                )}
+                {dispatch.text}
+              </p>
+            </div>
           )}
         </div>
       )}

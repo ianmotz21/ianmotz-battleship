@@ -11,6 +11,7 @@ A Punic Wars-themed Battleship game built with Next.js and TypeScript. You comma
 - **Hidden enemy fleet:** Carthage's ships are placed randomly using the same rules, and stay hidden until sunk.
 - **Turn-based combat:** turns strictly alternate between Rome and Carthage. The game tracks hits and misses, announces sunk ships, shows a Victory or Defeat screen with stats, and offers Play again.
 - **Cinematic layer:** animated ocean, synthesized sound effects (cannon fire, splashes, impacts, crowd reactions, fanfare), and victory confetti or defeat ash. There's a saved mute toggle, and the app respects the system's reduced-motion setting.
+- **Visual polish:** a short "The Battle Begins" intro with Roman and Carthaginian standards, galley-shaped ships drawn in SVG, spray for misses, fire and smoke for hits, a flare when a ship sinks, Scipio and Hannibal coin medallions beside battle remarks, a faint portolan-chart backdrop, and a battle report with laurels and standards at the end. Everything is CSS and inline SVG with no image files, and the extra motion is turned off under reduced motion.
 - **Designed for phones:** below 640px wide, one board shows at a time with a "Roman Fleet" / "Carthaginian Fleet" toggle that follows the action. A sticky status bar shows the turn, the latest shot and the score, and the placement controls sit at the bottom of the screen within thumb reach. The desktop layout keeps both boards side by side.
 - **Accessible:** works on screens down to 320px wide, and the boards can be played with the keyboard and have screen-reader labels.
 
@@ -56,6 +57,8 @@ src/
     Board.tsx          Presentational 10x10 board used for both fleets
     PlayerFleet.tsx    Ship selection and placement controls
     Celebration.tsx    Victory confetti and defeat ash overlay
+    BattleIntro.tsx    "The Battle Begins" title card shown as a battle opens
+    Insignia.tsx       SVG standards, laurels and commander medallions
     SoundToggle.tsx    Mute button, saved in localStorage
   lib/
     fleet.ts           Fleet definitions and placement/hit/sunk rules (pure functions)
