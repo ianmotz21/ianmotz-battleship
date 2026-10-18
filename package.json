@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/gameLogic.test.ts"
+    "test": "tsx --test src/lib/gameLogic.test.ts src/lib/browserState.test.ts"
   },
   "dependencies": {
     "next": "16.4.2",

@@ -59,6 +59,9 @@ function save(next: GameRecord[]) {
 }
 
 export function addRecord(record: Omit<GameRecord, "id" | "playedAt">) {
+  // Re-read storage first: another tab may have saved a result since this tab
+  // last looked, and saving a stale copy would erase it.
+  records = null;
   const playedAt = Date.now();
   const id = `${playedAt}-${Math.random().toString(36).slice(2, 8)}`;
   save([...getRecords(), { ...record, id, playedAt }].slice(-MAX_RECORDS));

@@ -9,6 +9,7 @@ import type { ShotOutcome } from "@/lib/battleMessages";
 /** Time for the cannonball to land; the board animations use the same delay. */
 const IMPACT_DELAY_S = 0.16;
 const MUTE_KEY = "bellum-punicum-muted";
+const MASTER_GAIN = 0.5;
 
 let context: AudioContext | null = null;
 let output: GainNode | null = null;
@@ -35,6 +36,12 @@ export function setMuted(value: boolean) {
   } catch {
     // Storage can be unavailable (e.g. private mode); the setting just won't persist.
   }
+  // Sounds are scheduled ahead of time, so silence the master volume too:
+  // otherwise a fanfare that's already playing would carry on after muting.
+  if (context && output) {
+    output.gain.cancelScheduledValues(context.currentTime);
+    output.gain.setTargetAtTime(value ? 0 : MASTER_GAIN, context.currentTime, 0.02);
+  }
   muteListeners.forEach((listener) => listener());
 }
 
@@ -60,7 +67,7 @@ function getAudio(): AudioContext | null {
     const compressor = context.createDynamicsCompressor();
     compressor.connect(context.destination);
     output = context.createGain();
-    output.gain.value = 0.5;
+    output.gain.value = MASTER_GAIN;
     output.connect(compressor);
 
     noiseBuffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
