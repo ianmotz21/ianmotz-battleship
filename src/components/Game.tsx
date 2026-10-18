@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Celebration from "@/components/Celebration";
 import Board, { type Dispatch, type Shots, type Side } from "@/components/Board";
+import HomeScreen from "@/components/HomeScreen";
 import PlayerFleet from "@/components/PlayerFleet";
-import { pickCarthageTarget } from "@/lib/ai";
+import { getDifficulty, pickTarget, type Difficulty } from "@/lib/ai";
+import { addRecord } from "@/lib/leaderboard";
 import { pickBattleMessage, type ShotOutcome } from "@/lib/battleMessages";
 import { playGameOver, playShipSunk, playShot } from "@/lib/sound";
 import {
@@ -44,13 +46,40 @@ function onlyShips(ships: Placements, ids: ShipId[]): Placements {
   return Object.fromEntries(ids.map((id) => [id, ships[id]]));
 }
 
-/** Each "Play again" swaps in a brand-new Battle, which starts from scratch. */
+/**
+ * Shows the home screen, then the battle. Each "Play again" swaps in a
+ * brand-new Battle, which starts from scratch.
+ */
 export default function Game() {
+  const [screen, setScreen] = useState<"home" | "battle">("home");
+  const [difficulty, setDifficulty] = useState<Difficulty>("strategist");
   const [gameNumber, setGameNumber] = useState(1);
-  return <Battle key={gameNumber} onPlayAgain={() => setGameNumber((n) => n + 1)} />;
+
+  function startBattle() {
+    setGameNumber((n) => n + 1);
+    setScreen("battle");
+  }
+
+  if (screen === "home") {
+    return <HomeScreen difficulty={difficulty} onDifficultyChange={setDifficulty} onStart={startBattle} />;
+  }
+  return (
+    <Battle
+      key={gameNumber}
+      difficulty={difficulty}
+      onPlayAgain={startBattle}
+      onMainMenu={() => setScreen("home")}
+    />
+  );
 }
 
-function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
+type BattleProps = {
+  difficulty: Difficulty;
+  onPlayAgain: () => void;
+  onMainMenu: () => void;
+};
+
+function Battle({ difficulty, onPlayAgain, onMainMenu }: BattleProps) {
   const [romanShips, setRomanShips] = useState<Placements>({});
   const [shotsAtCarthage, setShotsAtCarthage] = useState<Shots>(() => new Map());
   const [shotsAtRome, setShotsAtRome] = useState<Shots>(() => new Map());
@@ -104,6 +133,13 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
     );
     if (allSunk) {
       playGameOver("victory");
+      addRecord({
+        result: "victory",
+        difficulty,
+        shots: shots.size,
+        hits: countHits(shots),
+        shipsLost: sunkShipIds(romanShips, shotsAtRome).length,
+      });
       setRevealedCarthage(carthageShips);
       setWinner("rome");
     } else {
@@ -125,7 +161,13 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
       const sunkCells = new Set(
         sunkShipIds(romanShips, shotsAtRome).flatMap((id) => romanShips[id]?.cells ?? []),
       );
-      const target = pickCarthageTarget(shotsAtRome, sunkCells);
+      const afloat = FLEET.filter((ship) => !sunkShipIds(romanShips, shotsAtRome).includes(ship.id));
+      const target = pickTarget(
+        difficulty,
+        shotsAtRome,
+        sunkCells,
+        afloat.map((ship) => ship.size),
+      );
       const result = target ? fireShot(romanShips, shotsAtRome, target) : null;
       if (result) {
         const { outcome, shots, sunkShipId: sunkId, allSunk } = result;
@@ -139,6 +181,13 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
         }
         if (allSunk) {
           playGameOver("defeat");
+          addRecord({
+            result: "defeat",
+            difficulty,
+            shots: shotsAtCarthage.size,
+            hits: countHits(shotsAtCarthage),
+            shipsLost: FLEET.length,
+          });
           setRevealedCarthage(carthageShipsRef.current);
           setWinner("carthage");
           return;
@@ -148,7 +197,14 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
       setTurn("rome");
     }, CARTHAGE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [turn, winner, shotsAtRome, romanShips, romeDispatch]);
+  }, [turn, winner, shotsAtRome, romanShips, romeDispatch, difficulty, shotsAtCarthage]);
+
+  function handleMainMenu() {
+    if (battleStarted && !winner && !window.confirm("Abandon this battle and return to the main menu?")) {
+      return;
+    }
+    onMainMenu();
+  }
 
   let phase: "setup" | Side;
   let turnText: string;
@@ -168,8 +224,20 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
   const romeHits = countHits(shotsAtCarthage);
   const accuracy = shotsAtCarthage.size ? Math.round((romeHits / shotsAtCarthage.size) * 100) : 0;
 
+  const adversary = getDifficulty(difficulty);
+
   return (
     <div className={styles.game}>
+      <div className={styles.bar}>
+        <p className={styles.adversary} data-testid="adversary" data-difficulty={difficulty}>
+          Adversary: <strong>{adversary.name}</strong> <span>({adversary.level})</span>
+        </p>
+        {!winner && (
+          <button type="button" className={styles.menuButton} onClick={handleMainMenu}>
+            Main menu
+          </button>
+        )}
+      </div>
       {winner && <Celebration result={winner === "rome" ? "victory" : "defeat"} />}
       {winner ? (
         <section
@@ -187,11 +255,16 @@ function Battle({ onPlayAgain }: { onPlayAgain: () => void }) {
           </p>
           <p className={styles.resultStats}>
             {shotsAtCarthage.size} shots · {romeHits} hits · {accuracy}% accuracy · {carthageSunk.length} of{" "}
-            {FLEET.length} Carthaginian ships sunk
+            {FLEET.length} Carthaginian ships sunk · vs. {adversary.name}
           </p>
-          <button ref={playAgainRef} type="button" className={styles.playAgain} onClick={onPlayAgain}>
-            Play again
-          </button>
+          <div className={styles.resultActions}>
+            <button ref={playAgainRef} type="button" className={styles.playAgain} onClick={onPlayAgain}>
+              Play again
+            </button>
+            <button type="button" className={styles.menuButton} onClick={onMainMenu}>
+              Main menu
+            </button>
+          </div>
         </section>
       ) : (
         <p className={styles.turn} aria-live="polite" data-testid="turn-status" data-turn={phase}>

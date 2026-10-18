@@ -5,6 +5,66 @@
   gap: 1.75rem;
 }
 
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem 1.25rem;
+}
+
+.adversary {
+  font-family: var(--font-serif-stack);
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--bronze-light);
+}
+
+.adversary strong {
+  font-family: var(--font-display-stack);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--parchment);
+}
+
+.adversary span {
+  opacity: 0.8;
+}
+
+.menuButton {
+  padding: 0.35rem 0.95rem;
+  font-family: var(--font-display-stack);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bronze-light);
+  background: rgba(8, 12, 24, 0.45);
+  border: 1px solid rgba(176, 141, 87, 0.55);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.menuButton:hover {
+  color: var(--parchment);
+  border-color: var(--bronze-light);
+}
+
+.menuButton:focus-visible {
+  outline: 2px solid #f3dca6;
+  outline-offset: 3px;
+}
+
+.resultActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+}
+
 .turn {
   min-height: 1.5em;
   font-family: var(--font-display-stack);

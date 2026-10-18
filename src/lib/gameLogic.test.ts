@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { pickCarthageTarget } from "./ai";
-import { checkPlacement, FLEET, fireShot, getShip, randomPlacements, type Placements } from "./fleet";
+import { pickCarthageTarget, pickGeneralTarget, pickRecruitTarget, pickTarget, type Difficulty } from "./ai";
+import { checkPlacement, FLEET, fireShot, getShip, randomPlacements, sunkShipIds, type Placements } from "./fleet";
+import { topVictories, type GameRecord } from "./leaderboard";
 
 // A fixed fleet, so every test knows exactly where the ships are.
 // Rows 1, 3, 5, 7 and 9, each ship starting in column A.
@@ -111,5 +112,79 @@ describe("Carthaginian AI", () => {
     for (let i = 0; i < 50; i++) {
       assert.ok(["D5", "G5"].includes(pickCarthageTarget(shots, new Set())!));
     }
+  });
+});
+
+describe("difficulty levels", () => {
+  const ALL_SIZES = FLEET.map((ship) => ship.size);
+
+  test("every level finishes a whole game without repeating a square", () => {
+    for (const difficulty of ["recruit", "strategist", "general"] as Difficulty[]) {
+      let shots = new Map<string, "hit" | "miss">();
+      for (;;) {
+        const sunk = sunkShipIds(FIXED_FLEET, shots);
+        const sunkCells = new Set(sunk.flatMap((id) => FIXED_FLEET[id]!.cells));
+        const afloat = FLEET.filter((ship) => !sunk.includes(ship.id)).map((ship) => ship.size);
+        const target = pickTarget(difficulty, shots, sunkCells, afloat);
+        assert.ok(target && !shots.has(target), `${difficulty} picked a repeat or nothing`);
+        const result = fireShot(FIXED_FLEET, shots, target)!;
+        shots = result.shots;
+        if (result.allSunk) {
+          break;
+        }
+      }
+    }
+  });
+
+  test("the Recruit mostly fires at random, even after a hit", () => {
+    const shots = new Map<string, "hit" | "miss">([["E5", "hit"]]);
+    let followUps = 0;
+    for (let i = 0; i < 300; i++) {
+      if (["D5", "F5", "E4", "E6"].includes(pickRecruitTarget(shots, new Set())!)) {
+        followUps++;
+      }
+    }
+    assert.ok(followUps > 30 && followUps < 200, `followed up ${followUps} of 300 times`);
+  });
+
+  test("the General follows a line of hits", () => {
+    const shots = new Map<string, "hit" | "miss">([
+      ["E5", "hit"],
+      ["F5", "hit"],
+    ]);
+    for (let i = 0; i < 20; i++) {
+      assert.ok(["D5", "G5"].includes(pickGeneralTarget(shots, new Set(), ALL_SIZES)!));
+    }
+  });
+
+  test("the General never aims where no remaining ship could fit", () => {
+    // A1 is boxed in by misses, so even the smallest ship cannot cover it.
+    const shots = new Map<string, "hit" | "miss">([
+      ["B1", "miss"],
+      ["A2", "miss"],
+    ]);
+    for (let i = 0; i < 20; i++) {
+      assert.notEqual(pickGeneralTarget(shots, new Set(), ALL_SIZES), "A1");
+    }
+  });
+});
+
+describe("leaderboard", () => {
+  test("ranks victories by fewest shots and leaves out defeats", () => {
+    const base = { difficulty: "general", hits: 17, shipsLost: 2 } as const;
+    const records: GameRecord[] = [
+      { ...base, id: "a", result: "victory", shots: 60, playedAt: 1 },
+      { ...base, id: "b", result: "defeat", shots: 30, playedAt: 2 },
+      { ...base, id: "c", result: "victory", shots: 41, playedAt: 3 },
+      { ...base, id: "d", result: "victory", shots: 55, playedAt: 4, difficulty: "recruit" },
+    ];
+    assert.deepEqual(
+      topVictories(records, "all").map((r) => r.id),
+      ["c", "d", "a"],
+    );
+    assert.deepEqual(
+      topVictories(records, "general").map((r) => r.id),
+      ["c", "a"],
+    );
   });
 });
