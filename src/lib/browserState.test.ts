@@ -6,6 +6,8 @@ import { playShot, setMuted } from "./sound";
 // These modules talk to the browser, so give them a pretend one: a
 // localStorage shared by every "tab", and a silent stand-in for Web Audio.
 const storage = new Map<string, string>();
+// Simulates storage being blocked (e.g. some private-browsing modes).
+const storageFails = { reading: false, writing: false };
 
 function fakeParam() {
   return {
@@ -63,8 +65,14 @@ class FakeAudioContext {
 
 (globalThis as unknown as { window: unknown }).window = {
   localStorage: {
-    getItem: (key: string) => storage.get(key) ?? null,
-    setItem: (key: string, value: string) => storage.set(key, value),
+    getItem: (key: string) => {
+      if (storageFails.reading) throw new Error("storage blocked");
+      return storage.get(key) ?? null;
+    },
+    setItem: (key: string, value: string) => {
+      if (storageFails.writing) throw new Error("storage blocked");
+      storage.set(key, value);
+    },
     removeItem: (key: string) => storage.delete(key),
   },
   AudioContext: FakeAudioContext,
@@ -87,6 +95,22 @@ describe("leaderboard across tabs", () => {
       ["victory", "defeat"],
     );
   });
+
+  for (const mode of ["blocked entirely", "blocked for saving only"]) {
+    test(`results from this visit are kept when storage is ${mode}`, () => {
+      clearRecords();
+      storageFails.writing = true;
+      storageFails.reading = mode === "blocked entirely";
+      addRecord({ result: "victory", difficulty: "strategist", shots: 50, hits: 17, shipsLost: 2 });
+      addRecord({ result: "defeat", difficulty: "general", shots: 45, hits: 10, shipsLost: 5 });
+      storageFails.reading = storageFails.writing = false;
+
+      assert.deepEqual(
+        getRecords().map((r) => r.result),
+        ["victory", "defeat"],
+      );
+    });
+  }
 });
 
 describe("sound", () => {

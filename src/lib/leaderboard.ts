@@ -18,6 +18,8 @@ const MAX_RECORDS = 200;
 const NO_RECORDS: GameRecord[] = [];
 
 let records: GameRecord[] | null = null;
+// False after a failed save; until saving works again, this tab's copy is the only full one.
+let storageWorks = true;
 const listeners = new Set<() => void>();
 
 function isRecord(value: unknown): value is GameRecord {
@@ -31,15 +33,20 @@ function isRecord(value: unknown): value is GameRecord {
   );
 }
 
+/** The results currently in storage, or null if storage can't be read. */
+function readSaved(): GameRecord[] | null {
+  try {
+    const saved: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "[]");
+    return Array.isArray(saved) ? saved.filter(isRecord) : [];
+  } catch {
+    return null;
+  }
+}
+
 /** Every finished game saved in this browser, oldest first. */
 export function getRecords(): GameRecord[] {
   if (records === null) {
-    try {
-      const saved: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "[]");
-      records = Array.isArray(saved) ? saved.filter(isRecord) : [];
-    } catch {
-      records = [];
-    }
+    records = readSaved() ?? [];
   }
   return records;
 }
@@ -52,19 +59,22 @@ function save(next: GameRecord[]) {
   records = next;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    storageWorks = true;
   } catch {
+    storageWorks = false;
     // Storage can be unavailable (e.g. private mode); results just won't persist.
   }
   listeners.forEach((listener) => listener());
 }
 
 export function addRecord(record: Omit<GameRecord, "id" | "playedAt">) {
-  // Re-read storage first: another tab may have saved a result since this tab
-  // last looked, and saving a stale copy would erase it.
-  records = null;
+  // Start from what's in storage: another tab may have saved a result since this
+  // tab last looked, and saving a stale copy would erase it. If storage can't be
+  // read or written, keep building on this tab's own copy instead.
+  const latest = (storageWorks && readSaved()) || getRecords();
   const playedAt = Date.now();
   const id = `${playedAt}-${Math.random().toString(36).slice(2, 8)}`;
-  save([...getRecords(), { ...record, id, playedAt }].slice(-MAX_RECORDS));
+  save([...latest, { ...record, id, playedAt }].slice(-MAX_RECORDS));
 }
 
 export function clearRecords() {
