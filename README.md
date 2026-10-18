@@ -11,7 +11,8 @@ A Punic Wars-themed Battleship game built with Next.js and TypeScript. You comma
 - **Hidden enemy fleet:** Carthage's ships are placed randomly using the same rules, and stay hidden until sunk.
 - **Turn-based combat:** turns strictly alternate between Rome and Carthage. The game tracks hits and misses, announces sunk ships, shows a Victory or Defeat screen with stats, and offers Play again.
 - **Cinematic layer:** animated ocean, synthesized sound effects (cannon fire, splashes, impacts, crowd reactions, fanfare), and victory confetti or defeat ash. There's a saved mute toggle, and the app respects the system's reduced-motion setting.
-- **Responsive and accessible:** works on screens down to 320px wide, and the boards can be played with the keyboard and have screen-reader labels.
+- **Designed for phones:** below 640px wide, one board shows at a time with a "Roman Fleet" / "Carthaginian Fleet" toggle that follows the action. A sticky status bar shows the turn, the latest shot and the score, and the placement controls sit at the bottom of the screen within thumb reach. The desktop layout keeps both boards side by side.
+- **Accessible:** works on screens down to 320px wide, and the boards can be played with the keyboard and have screen-reader labels.
 
 ## Running locally
 

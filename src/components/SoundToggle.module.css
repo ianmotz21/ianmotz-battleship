@@ -32,7 +32,7 @@
   opacity: 0.75;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
   .toggle {
     top: 0.6rem;
     right: 0.6rem;

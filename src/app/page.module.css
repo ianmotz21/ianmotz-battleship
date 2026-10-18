@@ -66,14 +66,36 @@
   color: var(--bronze-dark);
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
+  /* Compact title so the battle starts higher up the screen */
   .main {
-    gap: 2.25rem;
-    padding: 2.5rem 1rem 2rem;
+    gap: 1rem;
+    padding: 2.5rem 0.6rem 1.25rem;
   }
 
   .eyebrow {
-    font-size: 0.7rem;
-    letter-spacing: 0.25em;
+    display: none;
+  }
+
+  .title {
+    margin-top: 0;
+    font-size: clamp(1.45rem, 7.2vw, 2.1rem);
+    letter-spacing: 0.07em;
+  }
+
+  .subtitle {
+    margin-top: 0;
+    font-size: 1rem;
+  }
+
+  .meander {
+    width: min(260px, 70vw);
+    height: 9px;
+    margin-top: 0.45rem;
+    background-size: 9px 9px;
+  }
+
+  .footer {
+    font-size: 0.65rem;
   }
 }

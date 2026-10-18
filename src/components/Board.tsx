@@ -7,6 +7,11 @@ const ROW_LABELS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
 
 export type Side = "rome" | "carthage";
 
+/** "E5" -> "E·V", matching the board's column letters and Roman-numeral rows. */
+export function coordLabel(coord: string): string {
+  return `${coord[0]}·${ROW_LABELS[Number(coord.slice(1)) - 1]}`;
+}
+
 export type Shots = Map<string, ShotOutcome>;
 
 export type Dispatch = {

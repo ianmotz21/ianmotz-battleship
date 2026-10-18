@@ -196,7 +196,7 @@ export default function PlayerFleet({
 
         <div className={styles.footer}>
           <span data-testid="ships-placed">
-            {placedCount} / {FLEET.length} ships placed
+            {placedCount} / {FLEET.length} <span className={styles.longLabel}>ships </span>placed
           </span>
           <button type="button" className={styles.clear} onClick={clearFleet} disabled={placedCount === 0}>
             Clear fleet

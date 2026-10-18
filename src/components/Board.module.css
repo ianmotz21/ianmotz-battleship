@@ -456,20 +456,42 @@
   --sea-line: rgba(176, 141, 87, 0.35);
 }
 
-@media (max-width: 520px) {
+@media (max-width: 640px) {
+  /* One board fills the phone width, so squares can be bigger */
   .board {
-    --label-col: 1.6rem;
-    gap: 1rem;
-    padding: 1.25rem 0.75rem 1.25rem;
+    --cell: clamp(1.3rem, calc((100vw - 5.5rem) / 10), 2.6rem);
+    --label-col: 1.25rem;
+    gap: 0.65rem;
+    padding: 0.8rem 0.5rem 0.9rem;
+  }
+
+  .header {
+    flex-direction: row;
+    gap: 0.55rem;
   }
 
   .title {
-    font-size: 1.05rem;
+    font-size: 1rem;
     letter-spacing: 0.1em;
   }
 
-  .motto {
-    font-size: 0.85rem;
+  .motto,
+  .status {
+    display: none;
+  }
+
+  .spqr {
+    padding: 0.1rem 0.45rem;
+    font-size: 0.62rem;
+  }
+
+  .tanit {
+    width: 16px;
+    height: 19px;
+  }
+
+  .grid {
+    grid-template-rows: 1.25rem repeat(10, var(--cell));
   }
 
   .label {
@@ -478,6 +500,11 @@
 
   /* Longer remarks wrap to three lines on narrow phones */
   .dispatchArea {
-    min-height: 6.25rem;
+    min-height: 5.6rem;
+    margin-top: -0.2rem;
+  }
+
+  .dispatch {
+    font-size: 0.92rem;
   }
 }
