@@ -124,7 +124,7 @@ function Battle({ difficulty, onPlayAgain, onMainMenu }: BattleProps) {
   // Phone layout: the board the game is following, plus a board the player
   // picked by hand, which holds until the game moves the view on again.
   const [autoView, setAutoView] = useState<Side>("rome");
-  const [chosenView, setChosenView] = useState<{ view: Side; during: Side } | null>(null);
+  const [chosenView, setChosenView] = useState<Side | null>(null);
 
   // Carthage's hidden fleet. Kept in a ref because nothing on screen shows it.
   const carthageShipsRef = useRef<Placements>({});
@@ -148,7 +148,7 @@ function Battle({ difficulty, onPlayAgain, onMainMenu }: BattleProps) {
   const battleStarted = shotsAtCarthage.size > 0;
   const carthageSunk = sunkShipIds(revealedCarthage, shotsAtCarthage);
   const romeSunk = sunkShipIds(romanShips, shotsAtRome);
-  const view = chosenView && chosenView.during === autoView ? chosenView.view : autoView;
+  const view = chosenView ?? autoView;
 
   useEffect(() => {
     if (winner) {
@@ -163,7 +163,10 @@ function Battle({ difficulty, onPlayAgain, onMainMenu }: BattleProps) {
       next = "rome";
       delay = FOLLOW_ROME_SHOT_MS;
     }
-    const timer = setTimeout(() => setAutoView(next), delay);
+    const timer = setTimeout(() => {
+      setAutoView(next);
+      setChosenView(null);
+    }, delay);
     return () => clearTimeout(timer);
   }, [fleetReady, turn, winner, battleStarted]);
 
@@ -374,7 +377,7 @@ function Battle({ difficulty, onPlayAgain, onMainMenu }: BattleProps) {
               data-side={side}
               data-testid={`board-tab-${side}`}
               data-attention={attention === side || undefined}
-              onClick={() => setChosenView({ view: side, during: autoView })}
+              onClick={() => setChosenView(side)}
             >
               <span className={styles.tabName}>{side === "rome" ? "Roman Fleet" : "Carthaginian Fleet"}</span>
               <span className={styles.tabBadge}>
